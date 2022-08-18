@@ -75,6 +75,9 @@ function createLabels(seed, config) {
     let labels = seed;
 
     log.trace("Labels:", config.issue.labels);
+    config.issue.labels.forEach(label => {
+        labels += `GitHub Label: ${label};`
+    });
 
     return labels;
 }
@@ -177,7 +180,7 @@ async function createWorkItem(config) {
           {
             op: "add",
             path: "/fields/System.Tags",
-            value: createLabels(`GitHub Issue;GitHub Repo: ${config.repository.full_name}`, config)
+            value: createLabels(`GitHub Issue;GitHub Repo: ${config.repository.full_name};`, config)
           },
           {
             op: "add",
