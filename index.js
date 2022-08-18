@@ -39,7 +39,7 @@ async function getConfig(payload, env) {
         ...env
     };
 
-    log.setLevel(config.env.log_level ? config.env.log_level.toLowerCase() : "debug");
+    log.setLevel(config.log_level ? config.log_level.toLowerCase() : "debug");
 
     return config;
 }
