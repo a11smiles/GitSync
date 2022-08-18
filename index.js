@@ -87,6 +87,10 @@ async function performWork(config) {
             break;
         case "deleted":
             workItem = await deleteWorkItem(config);
+            break;
+        case "reopened":
+            workItem = await reopenWorkItem(config);
+            break;
     }
 
     return workItem;
@@ -323,6 +327,28 @@ async function deleteWorkItem(config) {
           op: "add",
           path: "/fields/System.History",
           value: `GitHub issue #${config.issue.number}: <a href="${cleanUrl(config.issue.url)}" target="_new">${config.issue.title}</a> in <a href="${cleanUrl(config.issue.repository_url)}" target="_blank">${config.repository.full_name}</a> removed by <a href="${config.issue.user.html_url}" target="_blank">${config.issue.user.login}</a>`
+        });
+      }
+
+    return await updateWorkItem(config, patchDoc);
+}
+
+async function deleteWorkItem(config) {
+    log.info("Reopening work item...");
+
+    let patchDoc = [
+        {
+            op: "add",
+            path: "/fields/System.State",
+            value: config.ado.states.reopened
+        }
+    ];
+
+    if (config.closed_at != "") {
+        patchDoc.push({
+          op: "add",
+          path: "/fields/System.History",
+          value: `GitHub issue #${config.issue.number}: <a href="${cleanUrl(config.issue.url)}" target="_new">${config.issue.title}</a> in <a href="${cleanUrl(config.issue.repository_url)}" target="_blank">${config.repository.full_name}</a> reopened by <a href="${config.issue.user.html_url}" target="_blank">${config.issue.user.login}</a>`
         });
       }
 
