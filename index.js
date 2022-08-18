@@ -76,7 +76,7 @@ function createLabels(seed, config) {
 
     log.trace("Labels:", config.issue.labels);
     config.issue.labels.forEach(label => {
-        labels += `GitHub Label: ${label};`
+        labels += `GitHub Label: ${label.name};`
     });
 
     return labels;
