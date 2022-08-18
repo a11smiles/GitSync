@@ -21,7 +21,7 @@ async function main() {
     }
 }
 
-async function getConfig(payload, env) {
+function getConfig(payload, env) {
     let configJSON = {};
 
     if (env.config_file) {
