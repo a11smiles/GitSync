@@ -186,6 +186,15 @@ async function createWorkItem(config) {
           }
     ]
 
+    // set assigned to
+    if (!!config.ado.assignedTo) {
+        patchDoc.push({
+            op: "add",
+            path: "/fields/System.AssignedTo",
+            value: config.ado.assignedTo
+        });
+    }
+
     // set area path if provided
     if (!!config.ado.areaPath) {
         patchDoc.push({
