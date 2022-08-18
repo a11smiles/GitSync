@@ -329,7 +329,7 @@ async function deleteWorkItem(config) {
 }
 
 async function updateWorkItem(config, patchDoc) {
-    let workItem = await getWorkItem(config);
+    let workItem = getWorkItem(config);
     log.debug("FOUND:", workItem);
     if (!!workItem) {
         log.warn(`Warning: cannot find work item (GitHub Issue #${config.issue.number}). Canceling update.`);
