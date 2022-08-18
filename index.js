@@ -181,7 +181,7 @@ async function createWorkItem(config) {
 
     // set area path if provided
     if (config.ado_areaPath != "") {
-        patchDocument.push({
+        patchDoc.push({
             op: "add",
             path: "/fields/System.AreaPath",
             value: config.ado_areaPath
@@ -190,7 +190,7 @@ async function createWorkItem(config) {
 
     // set iteration path if provided
     if (config.ado_iterationPath != "") {
-        patchDocument.push({
+        patchDoc.push({
             op: "add",
             path: "/fields/System.IterationPath",
             value: config.ado_iterationPath
@@ -199,7 +199,7 @@ async function createWorkItem(config) {
 
     // if bypass rules, set user name
     if (config.ado_bypassRules) {
-        patchDocument.push({
+        patchDoc.push({
             op: "add",
             path: "/fields/System.CreatedBy",
             value: config.issue.user.login
@@ -215,7 +215,7 @@ async function createWorkItem(config) {
     try {
         result = await client.createWorkItem(
             (customHeaders = []),
-            (document = patchDocument),
+            (document = patchDoc),
             (project = config.ado_project),
             (type = config.ado_wit),
             (validateOnly = false),
