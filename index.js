@@ -91,6 +91,8 @@ async function performWork(config) {
         case "reopened":
             workItem = await reopenWorkItem(config);
             break;
+        case "edited":
+            break;
     }
 
     return workItem;
