@@ -1,2 +1,3 @@
 # GitSync
-A workflow action that syncs GitHub issues with Azure DevOps.
+
+A workflow action that syncs GitHub and Azure DevOps activities.

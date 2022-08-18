@@ -1,0 +1,9 @@
+name: "GitSync"
+description: "A workflow action that syncs GitHub and Azure DevOps activities."
+author: "a11smiles"
+branding: 
+  icon: "repeat"
+  color: "blue"
+runs:
+  using: "node12"
+  main: "index.js"  
