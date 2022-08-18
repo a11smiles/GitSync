@@ -1,4 +1,5 @@
 const fs = require('fs');
+const log = require('loglevel');
 const core = require('@actions/core');
 const github = require('@actions/github');
 const azdo = require('azure-devops-node-api');
@@ -12,9 +13,8 @@ async function main() {
 
         let config = getConfig(context.payload, env);
         
-        //if (config.env.log_level)
-        console.log(config);
-
+        log.debug(config);
+        
     } finally {
     }
 }
@@ -35,11 +35,11 @@ async function getConfig(payload, env) {
 
     let config = {
         ...payload,
-        configJSON,
-        env
+        ...configJSON,
+        ...env
     };
 
-    config.env.log_level = config.env.log_level ? config.env.log_level : 2;
+    log.setLevel(config.env.log_level ? config.env.log_level.toLowerCase() : "debug");
 
     return config;
 }
