@@ -64,6 +64,10 @@ function getConnection(config) {
     return new azdo.WebApi(config.ado_orgUrl, azdo.getPersonalAccessTokenHandler(config.ado_token));
 }
 
+function cleanUrl(url) {
+    return url.replace("api.github.com/repos/", "github.com/");
+}
+
 async function getWorkItem(config) {
     log.info("Searching for work item...");
     log.trace("AzDO Url:", config.ado_orgUrl);
@@ -147,7 +151,7 @@ async function createWorkItem(config) {
         {
             op: "add",
             path: "/fields/System.Title",
-            value: `GH #${config.issue.number}: ${config.title}`
+            value: `GH #${config.issue.number}: ${config.issue.title}`
           },
           {
             op: "add",
@@ -169,13 +173,13 @@ async function createWorkItem(config) {
             path: "/relations/-",
             value: {
               rel: "Hyperlink",
-              url: config.issue.url.replace("api.github.com/repos/", "github.com/")
+              url: cleanUrl(config.issue.url)
             }
           },
           {
             op: "add",
             path: "/fields/System.History",
-            value: `GitHub issue #${config.issue.number}: <a href="${config.issue.url}" target="_new">${config.issue.title}</a> created in <a href="${config.issue.repository_url}" target="_blank">${config.repository.full_name}</a> by <a href="${config.issue.user.html_url}" target="_blank">${config.issue.user.login}</a>`
+            value: `GitHub issue #${config.issue.number}: <a href="${cleanUrl(config.issue.url)}" target="_new">${config.issue.title}</a> created in <a href="${cleanUrl(config.issue.repository_url)}" target="_blank">${config.repository.full_name}</a> by <a href="${config.issue.user.html_url}" target="_blank">${config.issue.user.login}</a>`
           }
     ]
 
@@ -228,6 +232,9 @@ async function createWorkItem(config) {
             core.setFailed();
             return -1;
         }
+
+        log.debug(result);
+        log.info("Successfully created work item:", result.id);
 
         return result;
     } catch (exc) {
