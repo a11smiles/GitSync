@@ -331,7 +331,7 @@ async function deleteWorkItem(config) {
 
 async function updateWorkItem(config, patchDoc) {
     getWorkItem(config).then(async (workItem) => {
-        if (!!workItem) {
+        if (!workItem) {
             log.warn(`Warning: cannot find work item (GitHub Issue #${config.issue.number}). Canceling update.`);
             return 0;
         }
