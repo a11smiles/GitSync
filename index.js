@@ -165,123 +165,124 @@ async function getWorkItem(config) {
 async function createWorkItem(config) {
     log.info("Creating work item...");
 
-    let workItem = await getWorkItem(config);
-    if (workItem != null) {
-        log.warn(`Warning: work item (#${workItem.id}) already exists. Canceling creation.`);
-        return 0;
-    }
-
-    var converter = new showdown.Converter();
-    var html = converter.makeHtml(config.issue.body);
-    
-    converter = null;
-
-    // create patch doc
-    let patchDoc = [
-        {
-            op: "add",
-            path: "/fields/System.Title",
-            value: `GH #${config.issue.number}: ${config.issue.title}`
-          },
-          {
-            op: "add",
-            path: "/fields/System.Description",
-            value: (!!html ? html : "")
-          },
-          {
-            op: "add",
-            path: "/fields/Microsoft.VSTS.TCM.ReproSteps",
-            value: (!!html ? html : "")
-          },
-          {
-            op: "add",
-            path: "/fields/System.Tags",
-            value: createLabels(`GitHub Issue;GitHub Repo: ${config.repository.full_name};`, config)
-          },
-          {
-            op: "add",
-            path: "/relations/-",
-            value: {
-              rel: "Hyperlink",
-              url: cleanUrl(config.issue.url)
-            }
-          },
-          {
-            op: "add",
-            path: "/fields/System.History",
-            value: `GitHub issue #${config.issue.number}: <a href="${cleanUrl(config.issue.url)}" target="_new">${config.issue.title}</a> created in <a href="${cleanUrl(config.issue.repository_url)}" target="_blank">${config.repository.full_name}</a> by <a href="${config.issue.user.html_url}" target="_blank">${config.issue.user.login}</a>`
-          }
-    ]
-
-    // set assigned to
-    if (!!config.ado.assignedTo) {
-        patchDoc.push({
-            op: "add",
-            path: "/fields/System.AssignedTo",
-            value: config.ado.assignedTo
-        });
-    }
-
-    // set area path if provided
-    if (!!config.ado.areaPath) {
-        patchDoc.push({
-            op: "add",
-            path: "/fields/System.AreaPath",
-            value: config.ado.areaPath
-        });
-    }
-
-    // set iteration path if provided
-    if (!!config.ado.iterationPath) {
-        patchDoc.push({
-            op: "add",
-            path: "/fields/System.IterationPath",
-            value: config.ado.iterationPath
-        });
-    }
-
-    // if bypass rules, set user name
-    if (!!config.ado.bypassRules) {
-        patchDoc.push({
-            op: "add",
-            path: "/fields/System.CreatedBy",
-            value: config.issue.user.login
-        });
-    }
-
-    log.debug("Patch document:", patchDoc);
-
-    let conn = getConnection(config);
-    let client = await conn.getWorkItemTrackingApi();
-    let result = null;
-
-    try {
-        result = await client.createWorkItem(
-            (customHeaders = []),
-            (document = patchDoc),
-            (project = config.ado.project),
-            (type = config.ado.wit),
-            (validateOnly = false),
-            (bypassRules = config.ado.bypassRules)
-        );
-
-        if (result == null) {
-            log.error("Error: failure creating work item.");
-            log.error(`WIT may not be correct: ${config.ado.wit}`);
-            core.setFailed();
-            return -1;
+    getWorkItem(config).then(workItem => {
+        if (workItem != null) {
+            log.warn(`Warning: work item (#${workItem.id}) already exists. Canceling creation.`);
+            return 0;
         }
 
-        log.debug(result);
-        log.info("Successfully created work item:", result.id);
+        var converter = new showdown.Converter();
+        var html = converter.makeHtml(config.issue.body);
+        
+        converter = null;
 
-        return result;
-    } catch (exc) {
-        log.error("Error: failure creating work item.");
-        log.error(exc);
-        core.setFailed(exc);
-        return -1;
-    }
+        // create patch doc
+        let patchDoc = [
+            {
+                op: "add",
+                path: "/fields/System.Title",
+                value: `GH #${config.issue.number}: ${config.issue.title}`
+            },
+            {
+                op: "add",
+                path: "/fields/System.Description",
+                value: (!!html ? html : "")
+            },
+            {
+                op: "add",
+                path: "/fields/Microsoft.VSTS.TCM.ReproSteps",
+                value: (!!html ? html : "")
+            },
+            {
+                op: "add",
+                path: "/fields/System.Tags",
+                value: createLabels(`GitHub Issue;GitHub Repo: ${config.repository.full_name};`, config)
+            },
+            {
+                op: "add",
+                path: "/relations/-",
+                value: {
+                rel: "Hyperlink",
+                url: cleanUrl(config.issue.url)
+                }
+            },
+            {
+                op: "add",
+                path: "/fields/System.History",
+                value: `GitHub issue #${config.issue.number}: <a href="${cleanUrl(config.issue.url)}" target="_new">${config.issue.title}</a> created in <a href="${cleanUrl(config.issue.repository_url)}" target="_blank">${config.repository.full_name}</a> by <a href="${config.issue.user.html_url}" target="_blank">${config.issue.user.login}</a>`
+            }
+        ]
+
+        // set assigned to
+        if (!!config.ado.assignedTo) {
+            patchDoc.push({
+                op: "add",
+                path: "/fields/System.AssignedTo",
+                value: config.ado.assignedTo
+            });
+        }
+
+        // set area path if provided
+        if (!!config.ado.areaPath) {
+            patchDoc.push({
+                op: "add",
+                path: "/fields/System.AreaPath",
+                value: config.ado.areaPath
+            });
+        }
+
+        // set iteration path if provided
+        if (!!config.ado.iterationPath) {
+            patchDoc.push({
+                op: "add",
+                path: "/fields/System.IterationPath",
+                value: config.ado.iterationPath
+            });
+        }
+
+        // if bypass rules, set user name
+        if (!!config.ado.bypassRules) {
+            patchDoc.push({
+                op: "add",
+                path: "/fields/System.CreatedBy",
+                value: config.issue.user.login
+            });
+        }
+
+        log.debug("Patch document:", patchDoc);
+
+        let conn = getConnection(config);
+        let client = await conn.getWorkItemTrackingApi();
+        let result = null;
+
+        try {
+            result = await client.createWorkItem(
+                (customHeaders = []),
+                (document = patchDoc),
+                (project = config.ado.project),
+                (type = config.ado.wit),
+                (validateOnly = false),
+                (bypassRules = config.ado.bypassRules)
+            );
+
+            if (result == null) {
+                log.error("Error: failure creating work item.");
+                log.error(`WIT may not be correct: ${config.ado.wit}`);
+                core.setFailed();
+                return -1;
+            }
+
+            log.debug(result);
+            log.info("Successfully created work item:", result.id);
+
+            return result;
+        } catch (exc) {
+            log.error("Error: failure creating work item.");
+            log.error(exc);
+            core.setFailed(exc);
+            return -1;
+        }
+    });
 }
 
 async function closeWorkItem(config) {
@@ -329,37 +330,37 @@ async function deleteWorkItem(config) {
 }
 
 async function updateWorkItem(config, patchDoc) {
-    let workItem = getWorkItem(config);
-    log.debug("FOUND:", workItem);
-    if (!!workItem) {
-        log.warn(`Warning: cannot find work item (GitHub Issue #${config.issue.number}). Canceling update.`);
-        return 0;
-    }
+    getWorkItem(config).then(workItem => {
+        if (!!workItem) {
+            log.warn(`Warning: cannot find work item (GitHub Issue #${config.issue.number}). Canceling update.`);
+            return 0;
+        }
 
-    let conn = getConnection(config);
-    let client = await conn.getWorkItemTrackingApi();
-    let result = null;
+        let conn = getConnection(config);
+        let client = await conn.getWorkItemTrackingApi();
+        let result = null;
 
-    try {
-        result = await client.updateWorkItem(
-          (customHeaders = []),
-          (document = patchDoc),
-          (id = workItem.id),
-          (project = config.ado.project),
-          (validateOnly = false),
-          (bypassRules = config.ado.bypassRules)
-        );
-    
-        log.debug(result);
-        log.info("Successfully updated work item:", result.id);
-    
-        return result;
-    } catch (exc) {
-        log.error("Error: failure updating work item.");
-        log.error(exc);
-        core.setFailed(exc);
-        return -1;
-    }
+        try {
+            result = await client.updateWorkItem(
+            (customHeaders = []),
+            (document = patchDoc),
+            (id = workItem.id),
+            (project = config.ado.project),
+            (validateOnly = false),
+            (bypassRules = config.ado.bypassRules)
+            );
+        
+            log.debug(result);
+            log.info("Successfully updated work item:", result.id);
+        
+            return result;
+        } catch (exc) {
+            log.error("Error: failure updating work item.");
+            log.error(exc);
+            core.setFailed(exc);
+            return -1;
+        }
+    });
 }
 
 async function updateIssue() {
