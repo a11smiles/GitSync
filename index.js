@@ -175,7 +175,7 @@ async function createWorkItem(config) {
           {
             op: "add",
             path: "/fields/System.History",
-            value: `GitHub issue #${config.issue.number}: <a href="${config.issue.url}" target="_new">${config.issue.title}</a> created in <a href="${config.issue.repository_url}" target="_blank">${config.repository.full_name}</a> by <a href="${config.user.html_url}" target="_blank">${config.user.login}</a>`
+            value: `GitHub issue #${config.issue.number}: <a href="${config.issue.url}" target="_new">${config.issue.title}</a> created in <a href="${config.issue.repository_url}" target="_blank">${config.repository.full_name}</a> by <a href="${config.issue.user.html_url}" target="_blank">${config.issue.user.login}</a>`
           }
     ]
 
