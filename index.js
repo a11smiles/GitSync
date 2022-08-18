@@ -166,7 +166,7 @@ async function createWorkItem(config) {
     log.info("Creating work item...");
 
     getWorkItem(config).then(async (workItem) => {
-        if (workItem != null) {
+        if (!!workItem) {
             log.warn(`Warning: work item (#${workItem.id}) already exists. Canceling creation.`);
             return 0;
         }
@@ -326,7 +326,7 @@ async function deleteWorkItem(config) {
         });
       }
 
-    return await updateWorkItem(config);
+    return await updateWorkItem(config, patchDoc);
 }
 
 async function updateWorkItem(config, patchDoc) {
