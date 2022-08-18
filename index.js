@@ -50,6 +50,7 @@ async function getConfig(payload, env) {
 
 async function getWorkItem(config) {
     log.info('Searching for work item...');
+    log.trace('AzDO Url', config.ado_orgUrl);
 
     let conn = new azdo.WebApi(config.ado_orgUrl, azdo.getPersonalAccessTokenHandler(config.ado_token));
     let client = null;
