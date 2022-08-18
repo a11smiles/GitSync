@@ -3,6 +3,7 @@ const log = require('loglevel');
 const core = require('@actions/core');
 const github = require('@actions/github');
 const azdo = require('azure-devops-node-api');
+const showdown = require('showdown');
 
 main();
 
@@ -15,6 +16,11 @@ async function main() {
         log.debug(config);
 
         var workItem = await getWorkItem(config);
+        if (workItem == null) {
+            await createWorkItem(config);
+        } else {
+
+        }
 
     } catch (exc) {
         log.error(exc);
@@ -54,11 +60,15 @@ function getConfig(payload, env) {
     return config;
 }
 
+function getConnection(config) {
+    return new azdo.WebApi(config.ado_orgUrl, azdo.getPersonalAccessTokenHandler(config.ado_token));
+}
+
 async function getWorkItem(config) {
     log.info("Searching for work item...");
     log.trace("AzDO Url:", config.ado_orgUrl);
 
-    let conn = new azdo.WebApi(config.ado_orgUrl, azdo.getPersonalAccessTokenHandler(config.ado_token));
+    let conn = getConnection(config);
     let client = null;
     let result = null;
     let workItem = null;
@@ -76,7 +86,8 @@ async function getWorkItem(config) {
     let wiql = {
         query:
             "SELECT [System.Id], [System.Description], [System.Title], [System.AssignedTo], [System.State], [System.Tags] FROM workitems WHERE [System.TeamProject] = @project " +
-            "AND [System.Tags] CONTAINS 'GitHub Issue: " + config.issue.number + "' " +
+            "AND [System.Title] CONTAINS 'GH #" + config.issue.number + ":'" +
+            "AND [System.Tags] CONTAINS 'GitHub Issue'" +
             "AND [System.Tags] CONTAINS 'GitHub Repo: " + config.repository.full_name + "'"
     };
 
@@ -123,8 +134,108 @@ async function getWorkItem(config) {
     }
 }
 
-async function createWorkItem() {
+async function createWorkItem(config) {
+    log.info("Creating work item...");
 
+    var converter = new showdown.Converter();
+    var html = converter.makeHtml(config.issue.body);
+    
+    converter = null;
+
+    // create patch doc
+    let patchDoc = [
+        {
+            op: "add",
+            path: "/fields/System.Title",
+            value: `GH #${config.issue.number}: ${config.title}`
+          },
+          {
+            op: "add",
+            path: "/fields/System.Description",
+            value: html
+          },
+          {
+            op: "add",
+            path: "/fields/Microsoft.VSTS.TCM.ReproSteps",
+            value: html
+          },
+          {
+            op: "add",
+            path: "/fields/System.Tags",
+            value: `GitHub Issue;GitHub Repo: ${config.repository.full_name}`
+          },
+          {
+            op: "add",
+            path: "/relations/-",
+            value: {
+              rel: "Hyperlink",
+              url: config.issue.url.replace("api.github.com/repos/", "github.com/")
+            }
+          },
+          {
+            op: "add",
+            path: "/fields/System.History",
+            value: `GitHub issue #${config.issue.number}: <a href="${config.issue.url}" target="_new">${config.issue.title}</a> created in <a href="${config.issue.repository_url}" target="_blank">${config.repository.full_name}</a> by <a href="${config.user.html_url}" target="_blank">${config.user.login}</a>`
+          }
+    ]
+
+    // set area path if provided
+    if (config.ado_areaPath != "") {
+        patchDocument.push({
+            op: "add",
+            path: "/fields/System.AreaPath",
+            value: config.ado_areaPath
+        });
+    }
+
+    // set iteration path if provided
+    if (config.ado_iterationPath != "") {
+        patchDocument.push({
+            op: "add",
+            path: "/fields/System.IterationPath",
+            value: config.ado_iterationPath
+        });
+    }
+
+    // if bypass rules, set user name
+    if (config.ado_bypassRules) {
+        patchDocument.push({
+            op: "add",
+            path: "/fields/System.CreatedBy",
+            value: config.issue.user.login
+        });
+    }
+
+    log.debug("Patch document:", patchDoc);
+
+    let conn = getConnection(config);
+    let client = await conn.getWorkItemTrackingApi();
+    let result = null;
+
+    try {
+        result = await client.createWorkItem(
+            (customHeaders = []),
+            (document = patchDocument),
+            (project = config.ado_project),
+            (type = config.ado_wit),
+            (validateOnly = false),
+            (bypassRules = config.ado_bypassRules)
+        );
+
+        if (result == null) {
+            log.error("Error: failure creating work item.");
+            log.error(`WIT may not be correct: ${config.aod_wit}`);
+            core.setFailed();
+            return -1;
+        }
+
+        return result;
+    } catch (exc) {
+        log.error("Error: failure creating work item.");
+        log.error(exc);
+        core.setFailed(exc);
+        return -1;
+    }
 }
 
 async function updateWorkItem() {
