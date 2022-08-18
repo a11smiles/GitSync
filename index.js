@@ -82,6 +82,11 @@ async function performWork(config) {
         case "opened":
             workItem = await createWorkItem(config);
             break;
+        case "closed":
+            workItem = await closeWorkItem(config);
+            break;
+        case "deleted":
+            workItem = await deleteWorkItem(config);
     }
 
     return workItem;
@@ -158,15 +163,13 @@ async function getWorkItem(config) {
 }
 
 async function createWorkItem(config) {
-    let workItem = null;
-    workItem = await getWorkItem(config);
-    
+    log.info("Creating work item...");
+
+    let workItem = await getWorkItem(config);
     if (workItem != null) {
         log.warn(`Warning: work item (#${workItem.id}) already exists. Canceling creation.`);
         return 0;
     }
-
-    log.info("Creating work item...");
 
     var converter = new showdown.Converter();
     var html = converter.makeHtml(config.issue.body);
@@ -281,8 +284,81 @@ async function createWorkItem(config) {
     }
 }
 
-async function updateWorkItem() {
+async function closeWorkItem(config) {
+    log.info("Closing work item...");
 
+    let patchDoc = [
+        {
+            op: "add",
+            path: "/fields/System.State",
+            value: config.ado.states.closed
+        }
+    ];
+
+    if (config.closed_at != "") {
+        patchDoc.push({
+          op: "add",
+          path: "/fields/System.History",
+          value: `GitHub issue #${config.issue.number}: <a href="${cleanUrl(config.issue.url)}" target="_new">${config.issue.title}</a> in <a href="${cleanUrl(config.issue.repository_url)}" target="_blank">${config.repository.full_name}</a> closed by <a href="${config.issue.user.html_url}" target="_blank">${config.issue.user.login}</a>`
+        });
+      }
+    
+    return await updateWorkItem(config, patchDoc);
+}
+
+async function deleteWorkItem(config) {
+    log.info("Deleting work item...");
+
+    let patchDoc = [
+        {
+            op: "add",
+            path: "/fields/System.State",
+            value: config.ado.states.deleted
+        }
+    ];
+
+    if (config.closed_at != "") {
+        patchDoc.push({
+          op: "add",
+          path: "/fields/System.History",
+          value: `GitHub issue #${config.issue.number}: <a href="${cleanUrl(config.issue.url)}" target="_new">${config.issue.title}</a> in <a href="${cleanUrl(config.issue.repository_url)}" target="_blank">${config.repository.full_name}</a> removed by <a href="${config.issue.user.html_url}" target="_blank">${config.issue.user.login}</a>`
+        });
+      }
+
+    return await updateWorkItem(config);
+}
+
+async function updateWorkItem(config, patchDoc) {
+    let workItem = await getWorkItem(config);
+    if (!!workItem) {
+        log.warn(`Warning: cannot find work item (GitHub Issue #${config.issue.number}). Canceling update.`);
+        return 0;
+    }
+
+    let conn = getConnection(config);
+    let client = await conn.getWorkItemTrackingApi();
+    let result = null;
+
+    try {
+        result = await client.updateWorkItem(
+          (customHeaders = []),
+          (document = patchDoc),
+          (id = workItem.id),
+          (project = config.ado.project),
+          (validateOnly = false),
+          (bypassRules = config.ado.bypassRules)
+        );
+    
+        log.debug(result);
+        log.info("Successfully updated work item:", result.id);
+    
+        return result;
+    } catch (exc) {
+        log.error("Error: failure updating work item.");
+        log.error(exc);
+        core.setFailed(exc);
+        return -1;
+    }
 }
 
 async function updateIssue() {
