@@ -18,15 +18,18 @@ async function main() {
 
 async function getConfig(payload, env) {
     let configJSON = {};
-    try {
-        let configFile = fs.readFileSync('gsconfig.json');
-        configJSON = JSON.parse(configFile);    
 
-        console.log('JSON configuration file loaded.');
-    } catch {
-        console.log('JSON configuration file not found.');
-    };
-    
+    if (env.config_file) {
+        try {
+            let configFile = fs.readFileSync('gsconfig.json');
+            configJSON = JSON.parse(configFile);    
+
+            console.log('JSON configuration file loaded.');
+        } catch {
+            console.log('JSON configuration file not found.');
+        };
+    }    
+
     let config = {
         ...payload,
         ...configJSON,
