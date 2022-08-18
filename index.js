@@ -49,8 +49,8 @@ function getConfig(payload, env) {
 
     config.ado.orgUrl = `https://dev.azure.com/${config.ado.organization}`;
 
-    if (!!config.ado.token) { config.ado_token = config.ado.token; }
-    if (!!config.github.token) { config.github_token = config.github.token; }
+    if (!!config.ado_token) { config.ado.token = config.ado_token; }
+    if (!!config.github_token) { config.github.token = config.github_token; }
 
     if (config.log_level != undefined)
     {
