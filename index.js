@@ -180,7 +180,7 @@ async function createWorkItem(config) {
     ]
 
     // set area path if provided
-    if (config.ado_areaPath != "") {
+    if (!!config.ado_areaPath) {
         patchDoc.push({
             op: "add",
             path: "/fields/System.AreaPath",
@@ -189,7 +189,7 @@ async function createWorkItem(config) {
     }
 
     // set iteration path if provided
-    if (config.ado_iterationPath != "") {
+    if (!!config.ado_iterationPath) {
         patchDoc.push({
             op: "add",
             path: "/fields/System.IterationPath",
