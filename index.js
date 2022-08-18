@@ -74,7 +74,7 @@ function cleanUrl(url) {
 function createLabels(seed, config) {
     let labels = seed;
 
-    log.trace(config.issue.labels);
+    log.trace("Labels:", config.issue.labels);
 
     return labels;
 }
@@ -167,12 +167,12 @@ async function createWorkItem(config) {
           {
             op: "add",
             path: "/fields/System.Description",
-            value: html
+            value: (!!html ? html : "")
           },
           {
             op: "add",
             path: "/fields/Microsoft.VSTS.TCM.ReproSteps",
-            value: html
+            value: (!!html ? html : "")
           },
           {
             op: "add",
