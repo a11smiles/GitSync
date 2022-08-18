@@ -1,7 +1,7 @@
 const fs = require('fs');
 const core = require('@actions/core');
 const github = require('@actions/github');
-const azdo = requires('azure-devops-node-api');
+const azdo = require('azure-devops-node-api');
 
 main();
 
