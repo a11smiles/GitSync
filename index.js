@@ -56,7 +56,7 @@ function getConfig(payload, env) {
 
 async function getWorkItem(config) {
     log.info("Searching for work item...");
-    log.trace("AzDO Url: ", config.ado_orgUrl);
+    log.trace("AzDO Url:", config.ado_orgUrl);
 
     let conn = new azdo.WebApi(config.ado_orgUrl, azdo.getPersonalAccessTokenHandler(config.ado_token));
     let client = null;
@@ -80,11 +80,11 @@ async function getWorkItem(config) {
             "AND [System.Tags] CONTAINS 'GitHub Repo: " + config.repository.full_name + "'"
     };
 
-    log.debug("WIQL Query: ", wiql);
+    log.debug("WIQL Query:", wiql);
 
     try {
         result = await client.queryByWiql(wiql, context);
-        log.debug("Query results: ", result);
+        log.debug("Query results:", result);
 
         if (result == null) {
             log.error("Error: project name appears to be invalid.");
@@ -105,10 +105,10 @@ async function getWorkItem(config) {
         workItem = result.workItems.length > 0 ? result.workItems[0] : null;
     }
 
-    log.debug("Work item: ", workItem);
+    log.debug("Work item:", workItem);
 
     if (workItem != null) {
-        log.info("Work item found: ", workItem.id);
+        log.info("Work item found:", workItem.id);
         try {
             return await client.getWorkItem(workItem.id, null, null, 4);
         } catch (exc) {
