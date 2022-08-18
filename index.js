@@ -29,9 +29,9 @@ function getConfig(payload, env) {
             let configFile = fs.readFileSync(env.config_file);
             configJSON = JSON.parse(configFile);    
 
-            console.log('JSON configuration file loaded.');
+            console.log("JSON configuration file loaded.");
         } catch {
-            console.log('JSON configuration file not found.');
+            console.log("JSON configuration file not found.");
         };
     }    
 
@@ -43,14 +43,20 @@ function getConfig(payload, env) {
 
     config.ado_orgUrl = `https://dev.azure.com/${config.ado_organization}`;
 
-    log.setLevel(config.log_level != undefined ? config.log_level.toLowerCase() : "debug");
+    if (config.log_level != undefined)
+    {
+        console.log(`Setting logLevel to ${config.log_level.toLowerCase()}...`);
+        log.setLevel(config.log_level.toLowerCase(), true);
+    } else {
+        log.setLevel("debug", true);
+    }
 
     return config;
 }
 
 async function getWorkItem(config) {
-    log.info('Searching for work item...');
-    log.trace('AzDO Url: ', config.ado_orgUrl);
+    log.info("Searching for work item...");
+    log.trace("AzDO Url: ", config.ado_orgUrl);
 
     let conn = new azdo.WebApi(config.ado_orgUrl, azdo.getPersonalAccessTokenHandler(config.ado_token));
     let client = null;
