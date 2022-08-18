@@ -47,7 +47,7 @@ function getConfig(payload, env) {
         ...env
     };
 
-    config.ado_orgUrl = `https://dev.azure.com/${config.ado_organization}`;
+    config.ado.orgUrl = `https://dev.azure.com/${config.ado.organization}`;
 
     if (config.log_level != undefined)
     {
@@ -61,7 +61,7 @@ function getConfig(payload, env) {
 }
 
 function getConnection(config) {
-    return new azdo.WebApi(config.ado_orgUrl, azdo.getPersonalAccessTokenHandler(config.ado_token));
+    return new azdo.WebApi(config.ado.orgUrl, azdo.getPersonalAccessTokenHandler(config.ado.token));
 }
 
 function cleanUrl(url) {
@@ -70,7 +70,7 @@ function cleanUrl(url) {
 
 async function getWorkItem(config) {
     log.info("Searching for work item...");
-    log.trace("AzDO Url:", config.ado_orgUrl);
+    log.trace("AzDO Url:", config.ado.orgUrl);
 
     let conn = getConnection(config);
     let client = null;
@@ -86,7 +86,7 @@ async function getWorkItem(config) {
         return -1;
     }
 
-    let context = { project: config.ado_project };
+    let context = { project: config.ado.project };
     let wiql = {
         query:
             "SELECT [System.Id], [System.Description], [System.Title], [System.AssignedTo], [System.State], [System.Tags] FROM workitems WHERE [System.TeamProject] = @project " +
@@ -184,25 +184,25 @@ async function createWorkItem(config) {
     ]
 
     // set area path if provided
-    if (!!config.ado_areaPath) {
+    if (!!config.ado.areaPath) {
         patchDoc.push({
             op: "add",
             path: "/fields/System.AreaPath",
-            value: config.ado_areaPath
+            value: config.ado.areaPath
         });
     }
 
     // set iteration path if provided
-    if (!!config.ado_iterationPath) {
+    if (!!config.ado.iterationPath) {
         patchDoc.push({
             op: "add",
             path: "/fields/System.IterationPath",
-            value: config.ado_iterationPath
+            value: config.ado.iterationPath
         });
     }
 
     // if bypass rules, set user name
-    if (config.ado_bypassRules) {
+    if (!!config.ado.bypassRules) {
         patchDoc.push({
             op: "add",
             path: "/fields/System.CreatedBy",
@@ -220,15 +220,15 @@ async function createWorkItem(config) {
         result = await client.createWorkItem(
             (customHeaders = []),
             (document = patchDoc),
-            (project = config.ado_project),
-            (type = config.ado_wit),
+            (project = config.ado.project),
+            (type = config.ado.wit),
             (validateOnly = false),
-            (bypassRules = config.ado_bypassRules)
+            (bypassRules = config.ado.bypassRules)
         );
 
         if (result == null) {
             log.error("Error: failure creating work item.");
-            log.error(`WIT may not be correct: ${config.aod_wit}`);
+            log.error(`WIT may not be correct: ${config.ado.wit}`);
             core.setFailed();
             return -1;
         }
