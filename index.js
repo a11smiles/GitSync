@@ -15,13 +15,7 @@ async function main() {
         let config = getConfig(context.payload, env);
         log.debug(config);
 
-        var workItem = await getWorkItem(config);
-        if (workItem == null) {
-            await createWorkItem(config);
-        } else {
-
-        }
-
+        let workItem = await performWork(config);
     } catch (exc) {
         log.error(exc);
     }
@@ -80,6 +74,17 @@ function createLabels(seed, config) {
     });
 
     return labels;
+}
+
+async function performWork(config) {
+    let workItem = null;
+    switch (config.action) {
+        case "opened":
+            workItem = await createWorkItem(config);
+            break;
+    }
+
+    return workItem;
 }
 
 async function getWorkItem(config) {
@@ -153,6 +158,14 @@ async function getWorkItem(config) {
 }
 
 async function createWorkItem(config) {
+    let workItem = null;
+    workItem = await getWorkItem(config);
+    
+    if (workItem != null) {
+        log.warn(`Warning: work item (#${workItem.id}) already exists. Canceling creation.`);
+        return 0;
+    }
+
     log.info("Creating work item...");
 
     var converter = new showdown.Converter();
