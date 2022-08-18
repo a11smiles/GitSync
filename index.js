@@ -11,7 +11,10 @@ async function main() {
         const env = process.env;
 
         let config = getConfig(context.payload, env);
+        
+        //if (config.env.log_level)
         console.log(config);
+
     } finally {
     }
 }
@@ -32,11 +35,17 @@ async function getConfig(payload, env) {
 
     let config = {
         ...payload,
-        ...configJSON,
-        ...env
+        configJSON,
+        env
     };
 
+    config.env.log_level = config.env.log_level ? config.env.log_level : 2;
+
     return config;
+}
+
+async function getWorkItem() {
+
 }
 
 async function createWorkItem() {
