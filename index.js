@@ -165,7 +165,7 @@ async function getWorkItem(config) {
 async function createWorkItem(config) {
     log.info("Creating work item...");
 
-    getWorkItem(config).then(workItem => {
+    getWorkItem(config).then(async (workItem) => {
         if (workItem != null) {
             log.warn(`Warning: work item (#${workItem.id}) already exists. Canceling creation.`);
             return 0;
@@ -330,7 +330,7 @@ async function deleteWorkItem(config) {
 }
 
 async function updateWorkItem(config, patchDoc) {
-    getWorkItem(config).then(workItem => {
+    getWorkItem(config).then(async (workItem) => {
         if (!!workItem) {
             log.warn(`Warning: cannot find work item (GitHub Issue #${config.issue.number}). Canceling update.`);
             return 0;
