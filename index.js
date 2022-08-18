@@ -21,7 +21,7 @@ async function getConfig(payload, env) {
 
     if (env.config_file) {
         try {
-            let configFile = fs.readFileSync('gsconfig.json');
+            let configFile = fs.readFileSync(env.config_file);
             configJSON = JSON.parse(configFile);    
 
             console.log('JSON configuration file loaded.');
