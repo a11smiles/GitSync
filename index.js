@@ -333,7 +333,7 @@ async function deleteWorkItem(config) {
     return await updateWorkItem(config, patchDoc);
 }
 
-async function deleteWorkItem(config) {
+async function reopenWorkItem(config) {
     log.info("Reopening work item...");
 
     let patchDoc = [
