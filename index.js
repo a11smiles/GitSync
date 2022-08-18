@@ -71,6 +71,14 @@ function cleanUrl(url) {
     return url.replace("api.github.com/repos/", "github.com/");
 }
 
+function createLabels(seed, config) {
+    let labels = seed;
+
+    log.trace(config.issue.labels);
+
+    return labels;
+}
+
 async function getWorkItem(config) {
     log.info("Searching for work item...");
     log.trace("AzDO Url:", config.ado.orgUrl);
@@ -169,7 +177,7 @@ async function createWorkItem(config) {
           {
             op: "add",
             path: "/fields/System.Tags",
-            value: `GitHub Issue;GitHub Repo: ${config.repository.full_name}`
+            value: createLabels(`GitHub Issue;GitHub Repo: ${config.repository.full_name}`, config)
           },
           {
             op: "add",
