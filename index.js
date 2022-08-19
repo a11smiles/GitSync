@@ -100,10 +100,10 @@ async function performWork(config) {
             workItem = await unlabelWorkItem(config);
             break;
         case "assigned":
-//            workItem = await assignWorkItem(config);
+            workItem = await assignWorkItem(config);
             break;
         case "unassigned":
-//            workItem = await unassignWorkItem(config);
+            workItem = await unassignWorkItem(config);
             break;
     }
 
@@ -410,19 +410,33 @@ async function unlabelWorkItem(config) {
 
 async function assignWorkItem(config) {
     log.info("Assigning work item...");
+    let assignee = null;
+    let patchDoc = [];
 
-    let patchDoc = [
-        {
+    if (!!config.ado.mappings && !!config.ado.mappings.handles) {
+        if(!!config.ado.mappings[config.assignee.login]) {
+            assignee = config.ado.mappings[config.assignee.login]
+        }
+    }
+
+    if (!!assignee) {
+        patchDoc.push({
             op: "add",
             path: "/fields/System.AssignedTo",
-            value: createLabels("", [config.label])
-        },
-        {
-          op: "add",
-          path: "/fields/System.History",
-          value: `GitHub issue #${config.issue.number}: <a href="${cleanUrl(config.issue.url)}" target="_new">${config.issue.title}</a> in <a href="${cleanUrl(config.issue.repository_url)}" target="_blank">${config.repository.full_name}</a> assigned to '${config.label.name}' by <a href="${config.issue.user.html_url}" target="_blank">${config.issue.user.login}</a>`
-        }
-    ];
+            value: ""
+        });
+    } else {
+        patchDoc.push({
+            op: "remove",
+            path: "/fields/System.AssignedTo"
+        });
+    }
+
+    patchDoc.push({
+        op: "add",
+        path: "/fields/System.History",
+        value: `GitHub issue #${config.issue.number}: <a href="${cleanUrl(config.issue.url)}" target="_new">${config.issue.title}</a> in <a href="${cleanUrl(config.issue.repository_url)}" target="_blank">${config.repository.full_name}</a> assigned to '${config.assignee.login}' by <a href="${config.issue.user.html_url}" target="_blank">${config.issue.user.login}</a>`
+    });
 
     return await updateWorkItem(config, patchDoc);
 }
@@ -438,7 +452,7 @@ async function unassignWorkItem(config) {
         {
           op: "add",
           path: "/fields/System.History",
-          value: `GitHub issue #${config.issue.number}: <a href="${cleanUrl(config.issue.url)}" target="_new">${config.issue.title}</a> in <a href="${cleanUrl(config.issue.repository_url)}" target="_blank">${config.repository.full_name}</a> removal of assignment to '${config.label.name}' by <a href="${config.issue.user.html_url}" target="_blank">${config.issue.user.login}</a>`
+          value: `GitHub issue #${config.issue.number}: <a href="${cleanUrl(config.issue.url)}" target="_new">${config.issue.title}</a> in <a href="${cleanUrl(config.issue.repository_url)}" target="_blank">${config.repository.full_name}</a> removal of assignment to '${config.assignee.login}' by <a href="${config.issue.user.html_url}" target="_blank">${config.issue.user.login}</a>`
         }
     ];
 
