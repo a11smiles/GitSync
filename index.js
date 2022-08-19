@@ -416,20 +416,20 @@ async function assignWorkItem(config) {
     if (!!config.ado.mappings && !!config.ado.mappings.handles) {
         log.trace("Found mappings...");
         log.trace(`Searching for mapping for handle '${config.assignee.login}'...`);
-        if(!!config.ado.mappings[config.assignee.login]) {
-            assignee = config.ado.mappings[config.assignee.login]
+        if(!!config.ado.mappings.handles[config.assignee.login]) {
+            assignee = config.ado.mappings.handles[config.assignee.login]
         }
     }
 
     if (!!assignee) {
-        log.trace(`Found mapping for handle '${config.assignee.login}' as '${config.ado.mappings[config.assignee.login]}'...`);
+        log.trace(`Found mapping for handle '${config.assignee.login}' as '${config.ado.mappings.handles[config.assignee.login]}'...`);
         patchDoc.push({
             op: "add",
             path: "/fields/System.AssignedTo",
             value: ""
         });
     } else {
-        log.trace(`Found mapping for handle '${config.assignee.login}'. Setting as 'Unassigned'...`);
+        log.trace(`Did not find mapping for handle '${config.assignee.login}'. Setting as 'Unassigned'...`);
         patchDoc.push({
             op: "remove",
             path: "/fields/System.AssignedTo"
