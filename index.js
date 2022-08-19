@@ -643,7 +643,7 @@ async function updateIssue(config, client, workItem) {
     client.getWorkItem(workItem.id, ["System.Title", "System.Description", "System.State", "System.ChangedDate"]).then(async (wiObj) => {
         let parsed = wiObj.fields["System.Title"].match(/^GH\s#(\d+):\s(.*)/);
         let issue_number = parsed[1];
-        log.debug("Issue:", issue_number);
+        log.debug("Issue Number:", issue_number);
 
         // Get issue
         var issue = await octokit.rest.issues.get({
@@ -651,6 +651,8 @@ async function updateIssue(config, client, workItem) {
             repo,
             issue_number
         });
+
+        log.debug("Issue:", issue);
 
         // Check which is most recent
         // If WorkItem is more recent than Issue, update Issue
