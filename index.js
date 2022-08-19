@@ -4,6 +4,7 @@ const core = require('@actions/core');
 const github = require('@actions/github');
 const azdo = require('azure-devops-node-api');
 const showdown = require('showdown');
+const { trace } = require('console');
 
 main();
 
@@ -139,6 +140,10 @@ async function performWork(config) {
             break;
     }
 
+    if (!!config.schedule) {
+        await updateIssues(config);
+    }
+
     return workItem;
 }
 
@@ -164,8 +169,8 @@ async function getWorkItem(config) {
     let wiql = {
         query:
             "SELECT [System.Id], [System.Description], [System.Title], [System.AssignedTo], [System.State], [System.Tags] FROM workitems WHERE [System.TeamProject] = @project " +
-            "AND [System.Title] CONTAINS 'GH #" + config.issue.number + ":'" +
-            "AND [System.Tags] CONTAINS 'GitHub Issue'" +
+            "AND [System.Title] CONTAINS 'GH #" + config.issue.number + ":' " +
+            "AND [System.Tags] CONTAINS 'GitHub Issue' " +
             "AND [System.Tags] CONTAINS 'GitHub Repo: " + config.repository.full_name + "'"
     };
 
@@ -574,6 +579,118 @@ async function updateWorkItem(config, patchDoc) {
     });
 }
 
-async function updateIssue() {
+async function updateIssues(config) {
+    log.info("Updating issues...");
+    log.trace("AzDO Url:", config.ado.orgUrl);
 
+    let conn = getConnection(config);
+    let client = null;
+    let result = null;
+    let workItems = null;
+
+    try {
+        client = await conn.getWorkItemTrackingApi();
+    } catch (exc) {
+        log.error("Error: cannot connect to organization.");
+        log.error(exc);
+        core.setFailed(exc);
+        return -1;
+    }
+
+    let context = { project: config.ado.project };
+    let wiql = {
+        query:
+            "SELECT [System.Id], [System.Description], [System.Title], [System.AssignedTo], [System.State], [System.Tags] FROM workitems WHERE [System.TeamProject] = @project " +
+            "AND [System.Tags] CONTAINS 'GitHub Issue' " +
+            "AND [System.Tags] CONTAINS 'GitHub Repo: " + config.repository.full_name + "' " +
+            "AND [System.ChangedDate] > @Today - 1"
+    };
+
+    log.debug("WIQL Query:", wiql);
+
+    try {
+        result = await client.queryByWiql(wiql, context);
+        log.debug("Query results:", result);
+
+        if (result == null) {
+            log.error("Error: project name appears to be invalid.");
+            core.setFailed("Error: project name appears to be invalid.");
+            return -1;
+        }
+    } catch (exc) {
+        log.error("Error: unknown error while searching for work item.");
+        log.error(exc);
+        core.setFailed(exc);
+        return -1;
+    }
+
+    workItems = result.workItems;
+    workItems.forEach(workItem => updateIssue(config, client, workItem));
+}
+
+async function updateIssue(config, client, workItem) {
+    log.info(`Updating issue for work item (${workItem.id})...`);
+    const octokit = new github.getOctokit(config.github.token);
+    const owner = config.GITHUB_REPOSITORY_OWNER;
+    const repo = config.GITHUB_REPOSITORY.replace(owner + "/", "");
+
+    log.trace("Owner:", owner);
+    log.trace("Repo:", repo);
+
+    client.getWorkItem(workItem.id, ["System.Title", "System.Description", "System.State", "System.ChangedDate"]).then(wiObj => {
+        let parsed = wiObj.fields["System.Title"].match(/^GH\s#(\d+):\s(.*)/);
+        let issue_number = parsed[1];
+        log.trace("Issue:", issue_number);
+
+        // Get issue
+        var issue = await octokit.rest.issues.get({
+            owner,
+            repo,
+            issue_number
+        });
+
+        // Check which is most recent
+        // If WorkItem is more recent than Issue, update Issue
+        // There is a case that WorkItem was updated by Issue, which is why it's more recent
+        // Currently checks to see if title, description/body, and state are the same. If so (which means the WorkItem matches the Issue), no updates are necessary
+        // Can later add check to see if last entry in history of WorkItem was indeed updated by GitHub
+        if (new Date(wiObj.fields["ChangedDate"]) > new Date(issue.updated_at)) {
+            log.trace(`WorkItem.ChangedDate (${new Date(wiObj.fields["ChangedDate"])}) is more recent than Issue.UpdatedAt (${new Date(issue.updated_at)}). Updating issue...`);
+            let title = parsed[2];
+            let body = wiObj.fields["System.Description"];
+            let state = Object.keys(config.ado.states).find(k => obk[k]==wiObj.fields["System.State"]);
+            
+            wiObj.fields["System.State"];
+
+            log.trace("Title:", title);
+            log.trace("Body:", body);
+            log.trace("State:", state);
+
+            if (title != issue.title ||
+                body != issue.body ||
+                state != issue.state) {
+
+                let result = await octokit.rest.issues.update({
+                    owner,
+                    repo,
+                    issue_number,
+                    title,
+                    body 
+                })
+
+                log.debug("Update:", result);
+                log.trace("Issue updated.");
+
+                return result;
+            } else {
+                log.trace("Nothing has changed, so skipping.");
+ 
+                return null;
+            }
+        } else {
+            log.trace('Skipping issue update.')
+ 
+            return null;
+        }
+    });
 }
