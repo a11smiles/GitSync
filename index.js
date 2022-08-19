@@ -363,7 +363,7 @@ async function labelWorkItem(config) {
     let patchDoc = [
         {
             op: "add",
-            path: "/fields/System.Tag",
+            path: "/fields/System.Tags",
             value: createLabels("", [config.label])
         },
         {
@@ -382,7 +382,7 @@ async function unlabelWorkItem(config) {
     let patchDoc = [
         {
             op: "remove",
-            path: "/fields/System.Tag",
+            path: "/fields/System.Tags",
             value: createLabels("", [config.label])
         },
         {
