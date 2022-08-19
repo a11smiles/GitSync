@@ -646,11 +646,11 @@ async function updateIssue(config, client, workItem) {
         log.debug("Issue Number:", issue_number);
 
         // Get issue
-        var issue = await octokit.rest.issues.get({
+        var issue = (await octokit.rest.issues.get({
             owner,
             repo,
             issue_number
-        });
+        })).data;
 
         log.debug("Issue:", issue);
 
