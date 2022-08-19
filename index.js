@@ -168,6 +168,7 @@ async function getWorkItem(config) {
     let wiql = {
         query:
             "SELECT [System.Id], [System.Description], [System.Title], [System.AssignedTo], [System.State], [System.Tags] FROM workitems WHERE [System.TeamProject] = @project " +
+            "AND [System.WorkItemType] = '" + config.ado.wit + "'" +
             "AND [System.Title] CONTAINS 'GH #" + config.issue.number + ":' " +
             "AND [System.Tags] CONTAINS 'GitHub Issue' " +
             "AND [System.Tags] CONTAINS 'GitHub Repo: " + config.repository.full_name + "'"
@@ -600,8 +601,9 @@ async function updateIssues(config) {
     let wiql = {
         query:
             "SELECT [System.Id], [System.Description], [System.Title], [System.AssignedTo], [System.State], [System.Tags] FROM workitems WHERE [System.TeamProject] = @project " +
+            "AND [System.WorkItemType] = '" + config.ado.wit + "'" +
             "AND [System.Tags] CONTAINS 'GitHub Issue' " +
-            "AND [System.Tags] CONTAINS 'GitHub Repo: " + config.repository.full_name + "' " +
+            "AND [System.Tags] CONTAINS 'GitHub Repo: " + config.GITHUB_REPOSITORY + "' " +
             "AND [System.ChangedDate] > @Today - 1"
     };
 
