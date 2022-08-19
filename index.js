@@ -76,6 +76,31 @@ function createLabels(seed, labelsObj) {
     return labels;
 }
 
+function getAssignee(config, useDefault) {
+    let assignee = null;
+
+    if (!!config.ado.mappings && !!config.ado.mappings.handles) {
+        log.trace("Found mappings...");
+        log.trace(`Searching for mapping for handle '${config.assignee.login}'...`);
+        if(!!config.ado.mappings.handles[config.assignee.login]) {
+            assignee = config.ado.mappings.handles[config.assignee.login]
+        }
+    }
+
+    if (!!assignee) {
+        log.trace(`Found mapping for handle '${config.assignee.login}' as '${assignee}'...`);
+        return assignee;
+    } else {
+        log.trace(`No mapping found for handle '${config.assignee.login}'...`);
+        if (!!config.ado.assignedTo && useDefault) {
+            log.trace(`Using default assignment of '${config.assignee.login}'...`);
+            return config.ado.assignedTo;
+        }
+    }
+
+    return assignee;
+}
+
 async function performWork(config) {
     let workItem = null;
     switch (config.action) {
@@ -236,7 +261,7 @@ async function createWorkItem(config) {
             patchDoc.push({
                 op: "add",
                 path: "/fields/System.AssignedTo",
-                value: config.ado.assignedTo
+                value: getAssignee(config, true)
             });
         }
 
@@ -410,26 +435,16 @@ async function unlabelWorkItem(config) {
 
 async function assignWorkItem(config) {
     log.info("Assigning work item...");
-    let assignee = null;
+    let assignee = getAssignee(config, false);
     let patchDoc = [];
 
-    if (!!config.ado.mappings && !!config.ado.mappings.handles) {
-        log.trace("Found mappings...");
-        log.trace(`Searching for mapping for handle '${config.assignee.login}'...`);
-        if(!!config.ado.mappings.handles[config.assignee.login]) {
-            assignee = config.ado.mappings.handles[config.assignee.login]
-        }
-    }
-
     if (!!assignee) {
-        log.trace(`Found mapping for handle '${config.assignee.login}' as '${assignee}'...`);
         patchDoc.push({
             op: "add",
             path: "/fields/System.AssignedTo",
             value: assignee
         });
     } else {
-        log.trace(`Did not find mapping for handle '${config.assignee.login}'. Setting as 'Unassigned'...`);
         patchDoc.push({
             op: "remove",
             path: "/fields/System.AssignedTo"
