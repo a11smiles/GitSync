@@ -93,6 +93,10 @@ async function performWork(config) {
             break;
         case "edited":
             break;
+        case "labeled":
+        case "unlabeled":
+            workItem = await labelWorkItem(config);
+            break;
     }
 
     return workItem;
@@ -355,6 +359,15 @@ async function reopenWorkItem(config) {
       }
 
     return await updateWorkItem(config, patchDoc);
+}
+
+async function labelWorkItem(config) {
+    getWorkItem(config).then(async (workItem) => {
+        if (!workItem) {
+            log.warn(`Warning: cannot find work item (GitHub Issue #${config.issue.number}). Canceling update.`);
+            return 0;
+        }
+    });
 }
 
 async function updateWorkItem(config, patchDoc) {
