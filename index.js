@@ -628,7 +628,7 @@ async function updateIssues(config) {
     }
 
     workItems = result.workItems;
-    workItems.forEach(workItem => updateIssue(config, client, workItem));
+    workItems.forEach(async (workItem) => { await updateIssue(config, client, workItem); });
 }
 
 async function updateIssue(config, client, workItem) {
