@@ -379,20 +379,28 @@ async function labelWorkItem(config) {
 async function unlabelWorkItem(config) {
     log.info("Removing label from work item...");
 
-    let patchDoc = [
-        {
-            op: "remove",
-            path: "/fields/System.Tags",
-            value: createLabels("", [config.label])
-        },
-        {
-          op: "add",
-          path: "/fields/System.History",
-          value: `GitHub issue #${config.issue.number}: <a href="${cleanUrl(config.issue.url)}" target="_new">${config.issue.title}</a> in <a href="${cleanUrl(config.issue.repository_url)}" target="_blank">${config.repository.full_name}</a> removal of label '${config.label.name}' by <a href="${config.issue.user.html_url}" target="_blank">${config.issue.user.login}</a>`
+    getWorkItem(config).then(async (workItem) => {
+        if (!workItem) {
+            log.warn(`Warning: cannot find work item (GitHub Issue #${config.issue.number}). Canceling update.`);
+            return 0;
         }
-    ];
 
-    return await updateWorkItem(config, patchDoc);
+        let patchDoc = [
+            {
+                op: "replace",
+                path: "/fields/System.Tags",
+                value: workItem.fields["System.Tags"].replace(createLabels("", [config.label]), "")
+            },
+            {
+                op: "add",
+                path: "/fields/System.History",
+                value: `GitHub issue #${config.issue.number}: <a href="${cleanUrl(config.issue.url)}" target="_new">${config.issue.title}</a> in <a href="${cleanUrl(config.issue.repository_url)}" target="_blank">${config.repository.full_name}</a> removal of label '${config.label.name}' by <a href="${config.issue.user.html_url}" target="_blank">${config.issue.user.login}</a>`
+            }
+        ];
+
+        return await updateWorkItem(config, patchDoc);
+    });
+
 }
 
 async function updateWorkItem(config, patchDoc) {
