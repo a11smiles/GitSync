@@ -214,7 +214,7 @@ async function createWorkItem(config) {
             {
                 op: "add",
                 path: "/fields/System.Tags",
-                value: createLabels(`GitHub Issue;GitHub Repo: ${config.repository.full_name};`, config.issues.labels)
+                value: createLabels(`GitHub Issue;GitHub Repo: ${config.repository.full_name};`, config.issue.labels)
             },
             {
                 op: "add",
