@@ -65,11 +65,11 @@ function cleanUrl(url) {
     return url.replace("api.github.com/repos/", "github.com/");
 }
 
-function createLabels(seed, labels) {
+function createLabels(seed, labelsObj) {
     let labels = seed;
 
-    log.trace("Labels:", labels);
-    labels.forEach(label => {
+    log.trace("Labels:", labelsObj);
+    labelsObj.forEach(label => {
         labels += `GitHub Label: ${label.name};`
     });
 
