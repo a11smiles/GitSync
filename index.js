@@ -133,6 +133,9 @@ async function performWork(config) {
         case "unassigned":
             workItem = await unassignWorkItem(config);
             break;
+        case "create":
+            workItem = await addComment(config);
+            break;
     }
 
     return workItem;
@@ -475,6 +478,27 @@ async function unassignWorkItem(config) {
           op: "add",
           path: "/fields/System.History",
           value: `GitHub issue #${config.issue.number}: <a href="${cleanUrl(config.issue.url)}" target="_new">${config.issue.title}</a> in <a href="${cleanUrl(config.issue.repository_url)}" target="_blank">${config.repository.full_name}</a> removal of assignment to '${config.assignee.login}' by <a href="${config.issue.user.html_url}" target="_blank">${config.issue.user.login}</a>`
+        }
+    ];
+
+    return await updateWorkItem(config, patchDoc);
+}
+
+async function addComment(config) {
+    log.info("Adding comment to work item...");
+
+    var converter = new showdown.Converter();
+    var html = converter.makeHtml(config.comment.body);
+    
+    converter = null;
+
+    let patchDoc = [
+        {
+          op: "add",
+          path: "/fields/System.History",
+          value: 
+            `GitHub issue #${config.issue.number}: <a href="${cleanUrl(config.issue.url)}" target="_new">${config.issue.title}</a> in <a href="${cleanUrl(config.issue.repository_url)}" target="_blank">${config.repository.full_name}</a> comment added by '${config.assignee.login}' by <a href="${config.issue.user.html_url}" target="_blank">${config.issue.user.login}</a><br /><br />` +
+            `Comment <a href="${config.comment.html_url}" target="_blank">${config.comment.id}</a>:<br />${html}` 
         }
     ];
 
