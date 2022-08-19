@@ -4,7 +4,7 @@
   "description": "A workflow action that syncs GitHub and Azure DevOps activities.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "nyc --reporter=text --reporter=html mocha -r esm index.test.js"
   },
   "repository": {
     "type": "git",
@@ -30,5 +30,13 @@
     "fs": "^0.0.1-security",
     "loglevel": "^1.8.0",
     "showdown": "^2.1.0"
+  },
+  "devDependencies": {
+    "chai": "^4.3.6",
+    "esm": "^3.2.25",
+    "jasmine": "^4.3.0",
+    "jasmine-spec-reporter": "^7.0.0",
+    "mocha": "^10.0.0",
+    "nyc": "^15.1.0"
   }
 }

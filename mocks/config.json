@@ -1,0 +1,25 @@
+{
+    "log_level": "trace",
+    "ado": {
+        "organization": "foo",
+        "project": "bar",
+        "wit": "User Story",
+        "states": {
+            "new": "New",
+            "closed": "Closed",
+            "reopened": "New",
+            "deleted": "Removed",
+            "active": "Active"
+        },
+        "bypassRules": true,
+        "autoCreate": true,
+        "assignedTo": "noone@nowhere.com",
+        "areaPath": "bar\\fuz",
+        "iterationPath": "bar\\baz",
+        "mappings": {
+            "handles": {
+                "someone": "someone@somewhere.com"
+            }
+        }
+    }
+}

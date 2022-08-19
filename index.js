@@ -701,3 +701,7 @@ async function updateIssue(config, client, workItem) {
         }
     });
 }
+
+exports._test = {
+    getConfig
+}
