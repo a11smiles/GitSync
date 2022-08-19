@@ -36,6 +36,8 @@ function getConfig(payload, env) {
     }    
 
     let config = {
+        ado: {},
+        github: {},
         ...payload,
         ...configJSON,
         ...env
