@@ -79,7 +79,7 @@ function createLabels(seed, labelsObj) {
 function getAssignee(config, useDefault) {
     let assignee = null;
 
-    if (!!config.ado.mappings && !!config.ado.mappings.handles) {
+    if (!!config.assignee && !!config.ado.mappings && !!config.ado.mappings.handles) {
         log.trace("Found mappings...");
         log.trace(`Searching for mapping for handle '${config.assignee.login}'...`);
         if(!!config.ado.mappings.handles[config.assignee.login]) {
@@ -91,9 +91,12 @@ function getAssignee(config, useDefault) {
         log.trace(`Found mapping for handle '${config.assignee.login}' as '${assignee}'...`);
         return assignee;
     } else {
-        log.trace(`No mapping found for handle '${config.assignee.login}'...`);
-        if (!!config.ado.assignedTo && useDefault) {
-            log.trace(`Using default assignment of '${config.assignee.login}'...`);
+        if (!!config.assignee) {
+            log.trace(`No mapping found for handle '${config.assignee.login}'...`);
+        }
+
+        if (useDefault && !!config.ado.assignedTo) {
+            log.trace(`Using default assignment of '${config.ado.assignedTo}'...`);
             return config.ado.assignedTo;
         }
     }
