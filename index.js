@@ -691,7 +691,7 @@ async function updateIssue(config, client, workItem) {
                 return null;
             }
         } else {
-            log.debug('Skipping issue update.')
+            log.debug(`WorkItem.ChangedDate (${new Date(wiObj.fields["System.ChangedDate"])}) is less recent than Issue.UpdatedAt (${new Date(issue.updated_at)}). Skipping issue update...`);
  
             return null;
         }
