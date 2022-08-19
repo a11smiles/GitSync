@@ -120,6 +120,7 @@ async function performWork(config) {
             workItem = await reopenWorkItem(config);
             break;
         case "edited":
+            workItem = await editWorkItem(config);
             break;
         case "labeled":
             workItem = await labelWorkItem(config);
@@ -388,6 +389,40 @@ async function reopenWorkItem(config) {
           op: "add",
           path: "/fields/System.History",
           value: `GitHub issue #${config.issue.number}: <a href="${cleanUrl(config.issue.url)}" target="_new">${config.issue.title}</a> in <a href="${cleanUrl(config.issue.repository_url)}" target="_blank">${config.repository.full_name}</a> reopened by <a href="${config.issue.user.html_url}" target="_blank">${config.issue.user.login}</a>`
+        }
+    ];
+
+    return await updateWorkItem(config, patchDoc);
+}
+
+async function editWorkItem(config) {
+    log.info("Editing work item...");
+
+    var converter = new showdown.Converter();
+    var html = converter.makeHtml(config.issue.body);
+    
+    converter = null;
+
+    let patchDoc = [
+        {
+            op: "replace",
+            path: "/fields/System.Title",
+            value: `GH #${config.issue.number}: ${config.issue.title}`
+        },
+        {
+            op: "replace",
+            path: "/fields/System.Description",
+            value: (!!html ? html : "")
+        },
+        {
+            op: "replace",
+            path: "/fields/Microsoft.VSTS.TCM.ReproSteps",
+            value: (!!html ? html : "")
+        },
+        {
+          op: "add",
+          path: "/fields/System.History",
+          value: `GitHub issue #${config.issue.number}: <a href="${cleanUrl(config.issue.url)}" target="_new">${config.issue.title}</a> in <a href="${cleanUrl(config.issue.repository_url)}" target="_blank">${config.repository.full_name}</a> edited by <a href="${config.issue.user.html_url}" target="_blank">${config.issue.user.login}</a>`
         }
     ];
 
