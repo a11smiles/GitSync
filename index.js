@@ -663,7 +663,8 @@ async function updateIssue(config, client, workItem) {
             log.debug(`WorkItem.ChangedDate (${new Date(wiObj.fields["System.ChangedDate"])}) is more recent than Issue.UpdatedAt (${new Date(issue.updated_at)}). Updating issue...`);
             let title = parsed[2];
             let body = wiObj.fields["System.Description"];
-            let state = Object.keys(config.ado.states).find(k => obk[k]==wiObj.fields["System.State"]);
+            let states = config.ado.states;
+            let state = Object.keys(states).find(k => states[k]==wiObj.fields["System.State"]);
             
             wiObj.fields["System.State"];
 
