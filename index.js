@@ -133,7 +133,7 @@ async function performWork(config) {
         case "unassigned":
             workItem = await unassignWorkItem(config);
             break;
-        case "create":
+        case "created":
             workItem = await addComment(config);
             break;
     }
