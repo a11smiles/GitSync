@@ -497,8 +497,8 @@ async function addComment(config) {
           op: "add",
           path: "/fields/System.History",
           value: 
-            `GitHub issue #${config.issue.number}: <a href="${cleanUrl(config.issue.url)}" target="_new">${config.issue.title}</a> in <a href="${cleanUrl(config.issue.repository_url)}" target="_blank">${config.repository.full_name}</a> comment added by <a href="${config.comment.user.html_url}" target="_blank">${config.comment.user.login}</a><br /><br />` +
-            `Comment <a href="${config.comment.html_url}" target="_blank">${config.comment.id}</a>:<br />${html}` 
+            `GitHub issue #${config.issue.number}: <a href="${cleanUrl(config.issue.url)}" target="_new">${config.issue.title}</a> in <a href="${cleanUrl(config.issue.repository_url)}" target="_blank">${config.repository.full_name}</a> comment added by <a href="${config.comment.user.html_url}" target="_blank">${config.comment.user.login}</a><br />` +
+            `Comment #<a href="${config.comment.html_url}" target="_blank">${config.comment.id}</a>:<br />${html}` 
         }
     ];
 
