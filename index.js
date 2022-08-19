@@ -654,8 +654,8 @@ async function updateIssue(config, client, workItem) {
         // There is a case that WorkItem was updated by Issue, which is why it's more recent
         // Currently checks to see if title, description/body, and state are the same. If so (which means the WorkItem matches the Issue), no updates are necessary
         // Can later add check to see if last entry in history of WorkItem was indeed updated by GitHub
-        if (new Date(wiObj.fields["ChangedDate"]) > new Date(issue.updated_at)) {
-            log.trace(`WorkItem.ChangedDate (${new Date(wiObj.fields["ChangedDate"])}) is more recent than Issue.UpdatedAt (${new Date(issue.updated_at)}). Updating issue...`);
+        if (new Date(wiObj.fields["System.ChangedDate"]) > new Date(issue.updated_at)) {
+            log.trace(`WorkItem.ChangedDate (${new Date(wiObj.fields["System.ChangedDate"])}) is more recent than Issue.UpdatedAt (${new Date(issue.updated_at)}). Updating issue...`);
             let title = parsed[2];
             let body = wiObj.fields["System.Description"];
             let state = Object.keys(config.ado.states).find(k => obk[k]==wiObj.fields["System.State"]);
