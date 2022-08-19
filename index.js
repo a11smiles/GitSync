@@ -422,11 +422,11 @@ async function assignWorkItem(config) {
     }
 
     if (!!assignee) {
-        log.trace(`Found mapping for handle '${config.assignee.login}' as '${config.ado.mappings.handles[config.assignee.login]}'...`);
+        log.trace(`Found mapping for handle '${config.assignee.login}' as '${assignee}'...`);
         patchDoc.push({
             op: "add",
             path: "/fields/System.AssignedTo",
-            value: ""
+            value: assignee
         });
     } else {
         log.trace(`Did not find mapping for handle '${config.assignee.login}'. Setting as 'Unassigned'...`);
