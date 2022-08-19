@@ -680,7 +680,8 @@ async function updateIssue(config, client, workItem) {
                     repo,
                     issue_number,
                     title,
-                    body 
+                    body,
+                    state 
                 })
 
                 log.debug("Update:", result);
