@@ -65,11 +65,11 @@ function cleanUrl(url) {
     return url.replace("api.github.com/repos/", "github.com/");
 }
 
-function createLabels(seed, config) {
+function createLabels(seed, labels) {
     let labels = seed;
 
-    log.trace("Labels:", config.issue.labels);
-    config.issue.labels.forEach(label => {
+    log.trace("Labels:", labels);
+    labels.forEach(label => {
         labels += `GitHub Label: ${label.name};`
     });
 
@@ -94,8 +94,10 @@ async function performWork(config) {
         case "edited":
             break;
         case "labeled":
-        case "unlabeled":
             workItem = await labelWorkItem(config);
+            break;
+        case "unlabeled":
+            workItem = await unlabelWorkItem(config);
             break;
     }
 
@@ -206,7 +208,7 @@ async function createWorkItem(config) {
             {
                 op: "add",
                 path: "/fields/System.Tags",
-                value: createLabels(`GitHub Issue;GitHub Repo: ${config.repository.full_name};`, config)
+                value: createLabels(`GitHub Issue;GitHub Repo: ${config.repository.full_name};`, config.issues.labels)
             },
             {
                 op: "add",
@@ -325,16 +327,13 @@ async function deleteWorkItem(config) {
             op: "add",
             path: "/fields/System.State",
             value: config.ado.states.deleted
-        }
-    ];
-
-    if (config.closed_at != "") {
-        patchDoc.push({
+        },
+        {
           op: "add",
           path: "/fields/System.History",
           value: `GitHub issue #${config.issue.number}: <a href="${cleanUrl(config.issue.url)}" target="_new">${config.issue.title}</a> in <a href="${cleanUrl(config.issue.repository_url)}" target="_blank">${config.repository.full_name}</a> removed by <a href="${config.issue.user.html_url}" target="_blank">${config.issue.user.login}</a>`
-        });
-      }
+        }
+    ];
 
     return await updateWorkItem(config, patchDoc);
 }
@@ -347,27 +346,53 @@ async function reopenWorkItem(config) {
             op: "add",
             path: "/fields/System.State",
             value: config.ado.states.reopened
-        }
-    ];
-
-    if (config.closed_at != "") {
-        patchDoc.push({
+        },
+        {
           op: "add",
           path: "/fields/System.History",
           value: `GitHub issue #${config.issue.number}: <a href="${cleanUrl(config.issue.url)}" target="_new">${config.issue.title}</a> in <a href="${cleanUrl(config.issue.repository_url)}" target="_blank">${config.repository.full_name}</a> reopened by <a href="${config.issue.user.html_url}" target="_blank">${config.issue.user.login}</a>`
-        });
-      }
+        }
+    ];
 
     return await updateWorkItem(config, patchDoc);
 }
 
 async function labelWorkItem(config) {
-    getWorkItem(config).then(async (workItem) => {
-        if (!workItem) {
-            log.warn(`Warning: cannot find work item (GitHub Issue #${config.issue.number}). Canceling update.`);
-            return 0;
+    log.info("Adding label to work item...");
+
+    let patchDoc = [
+        {
+            op: "add",
+            path: "/fields/System.Tag",
+            value: createLabels("", [config.label])
+        },
+        {
+          op: "add",
+          path: "/fields/System.History",
+          value: `GitHub issue #${config.issue.number}: <a href="${cleanUrl(config.issue.url)}" target="_new">${config.issue.title}</a> in <a href="${cleanUrl(config.issue.repository_url)}" target="_blank">${config.repository.full_name}</a> addition of label '${config.label.name}' by <a href="${config.issue.user.html_url}" target="_blank">${config.issue.user.login}</a>`
         }
-    });
+    ];
+
+    return await updateWorkItem(config, patchDoc);
+}
+
+async function unlabelWorkItem(config) {
+    log.info("Removing label from work item...");
+
+    let patchDoc = [
+        {
+            op: "remove",
+            path: "/fields/System.Tag",
+            value: createLabels("", [config.label])
+        },
+        {
+          op: "add",
+          path: "/fields/System.History",
+          value: `GitHub issue #${config.issue.number}: <a href="${cleanUrl(config.issue.url)}" target="_new">${config.issue.title}</a> in <a href="${cleanUrl(config.issue.repository_url)}" target="_blank">${config.repository.full_name}</a> removal of label '${config.label.name}' by <a href="${config.issue.user.html_url}" target="_blank">${config.issue.user.login}</a>`
+        }
+    ];
+
+    return await updateWorkItem(config, patchDoc);
 }
 
 async function updateWorkItem(config, patchDoc) {
