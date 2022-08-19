@@ -637,13 +637,13 @@ async function updateIssue(config, client, workItem) {
     const owner = config.GITHUB_REPOSITORY_OWNER;
     const repo = config.GITHUB_REPOSITORY.replace(owner + "/", "");
 
-    log.debug("Owner:", owner);
-    log.debug("Repo:", repo);
+    log.debug(`[WORKITEM: ${workItem.Id}] Owner:`, owner);
+    log.debug(`[WORKITEM: ${workItem.Id}] Repo:`, repo);
 
     client.getWorkItem(workItem.id, ["System.Title", "System.Description", "System.State", "System.ChangedDate"]).then(async (wiObj) => {
         let parsed = wiObj.fields["System.Title"].match(/^GH\s#(\d+):\s(.*)/);
         let issue_number = parsed[1];
-        log.debug("Issue Number:", issue_number);
+        log.debug(`[WORKITEM: ${workItem.Id} / ISSUE: ${issue_number}] Issue Number:`, issue_number);
 
         // Get issue
         var issue = (await octokit.rest.issues.get({
@@ -652,7 +652,7 @@ async function updateIssue(config, client, workItem) {
             issue_number
         })).data;
 
-        log.debug("Issue:", issue);
+        log.debug(`[WORKITEM: ${workItem.Id} / ISSUE: ${issue_number}] Issue:`, issue);
 
         // Check which is most recent
         // If WorkItem is more recent than Issue, update Issue
@@ -660,7 +660,7 @@ async function updateIssue(config, client, workItem) {
         // Currently checks to see if title, description/body, and state are the same. If so (which means the WorkItem matches the Issue), no updates are necessary
         // Can later add check to see if last entry in history of WorkItem was indeed updated by GitHub
         if (new Date(wiObj.fields["System.ChangedDate"]) > new Date(issue.updated_at)) {
-            log.debug(`WorkItem.ChangedDate (${new Date(wiObj.fields["System.ChangedDate"])}) is more recent than Issue.UpdatedAt (${new Date(issue.updated_at)}). Updating issue...`);
+            log.debug(`[WORKITEM: ${workItem.Id} / ISSUE: ${issue_number}] WorkItem.ChangedDate (${new Date(wiObj.fields["System.ChangedDate"])}) is more recent than Issue.UpdatedAt (${new Date(issue.updated_at)}). Updating issue...`);
             let title = parsed[2];
             let body = wiObj.fields["System.Description"];
             let states = config.ado.states;
@@ -668,9 +668,9 @@ async function updateIssue(config, client, workItem) {
             
             wiObj.fields["System.State"];
 
-            log.debug("Title:", title);
-            log.debug("Body:", body);
-            log.debug("State:", state);
+            log.debug(`[WORKITEM: ${workItem.Id} / ISSUE: ${issue_number}] Title:`, title);
+            log.debug(`[WORKITEM: ${workItem.Id} / ISSUE: ${issue_number}] Body:`, body);
+            log.debug(`[WORKITEM: ${workItem.Id} / ISSUE: ${issue_number}] State:`, state);
 
             if (title != issue.title ||
                 body != issue.body ||
@@ -685,17 +685,17 @@ async function updateIssue(config, client, workItem) {
                     state 
                 })
 
-                log.debug("Update:", result);
-                log.debug("Issue updated.");
+                log.debug(`[WORKITEM: ${workItem.Id} / ISSUE: ${issue_number}] Update:`, result);
+                log.debug(`[WORKITEM: ${workItem.Id} / ISSUE: ${issue_number}] Issue updated.`);
 
                 return result;
             } else {
-                log.debug("Nothing has changed, so skipping.");
+                log.debug(`[WORKITEM: ${workItem.Id} / ISSUE: ${issue_number}] Nothing has changed, so skipping.`);
  
                 return null;
             }
         } else {
-            log.debug(`WorkItem.ChangedDate (${new Date(wiObj.fields["System.ChangedDate"])}) is less recent than Issue.UpdatedAt (${new Date(issue.updated_at)}). Skipping issue update...`);
+            log.debug(`[WORKITEM: ${workItem.Id} / ISSUE: ${issue_number}] WorkItem.ChangedDate (${new Date(wiObj.fields["System.ChangedDate"])}) is less recent than Issue.UpdatedAt (${new Date(issue.updated_at)}). Skipping issue update...`);
  
             return null;
         }
