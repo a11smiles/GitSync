@@ -4,7 +4,6 @@ const core = require('@actions/core');
 const github = require('@actions/github');
 const azdo = require('azure-devops-node-api');
 const showdown = require('showdown');
-const { trace } = require('console');
 
 main();
 
@@ -69,7 +68,7 @@ function cleanUrl(url) {
 function createLabels(seed, labelsObj) {
     let labels = seed;
 
-    log.trace("Labels:", labelsObj);
+    log.debug("Labels:", labelsObj);
     labelsObj.forEach(label => {
         labels += `GitHub Label: ${label.name};`
     });
@@ -81,23 +80,23 @@ function getAssignee(config, useDefault) {
     let assignee = null;
 
     if (!!config.assignee && !!config.ado.mappings && !!config.ado.mappings.handles) {
-        log.trace("Found mappings...");
-        log.trace(`Searching for mapping for handle '${config.assignee.login}'...`);
+        log.debug("Found mappings...");
+        log.debug(`Searching for mapping for handle '${config.assignee.login}'...`);
         if(!!config.ado.mappings.handles[config.assignee.login]) {
             assignee = config.ado.mappings.handles[config.assignee.login]
         }
     }
 
     if (!!assignee) {
-        log.trace(`Found mapping for handle '${config.assignee.login}' as '${assignee}'...`);
+        log.debug(`Found mapping for handle '${config.assignee.login}' as '${assignee}'...`);
         return assignee;
     } else {
         if (!!config.assignee) {
-            log.trace(`No mapping found for handle '${config.assignee.login}'...`);
+            log.debug(`No mapping found for handle '${config.assignee.login}'...`);
         }
 
         if (useDefault && !!config.ado.assignedTo) {
-            log.trace(`Using default assignment of '${config.ado.assignedTo}'...`);
+            log.debug(`Using default assignment of '${config.ado.assignedTo}'...`);
             return config.ado.assignedTo;
         }
     }
@@ -149,7 +148,7 @@ async function performWork(config) {
 
 async function getWorkItem(config) {
     log.info("Searching for work item...");
-    log.trace("AzDO Url:", config.ado.orgUrl);
+    log.debug("AzDO Url:", config.ado.orgUrl);
 
     let conn = getConnection(config);
     let client = null;
@@ -581,7 +580,7 @@ async function updateWorkItem(config, patchDoc) {
 
 async function updateIssues(config) {
     log.info("Updating issues...");
-    log.trace("AzDO Url:", config.ado.orgUrl);
+    log.debug("AzDO Url:", config.ado.orgUrl);
 
     let conn = getConnection(config);
     let client = null;
@@ -634,13 +633,13 @@ async function updateIssue(config, client, workItem) {
     const owner = config.GITHUB_REPOSITORY_OWNER;
     const repo = config.GITHUB_REPOSITORY.replace(owner + "/", "");
 
-    log.trace("Owner:", owner);
-    log.trace("Repo:", repo);
+    log.debug("Owner:", owner);
+    log.debug("Repo:", repo);
 
-    client.getWorkItem(workItem.id, ["System.Title", "System.Description", "System.State", "System.ChangedDate"]).then(wiObj => {
+    client.getWorkItem(workItem.id, ["System.Title", "System.Description", "System.State", "System.ChangedDate"]).then(async (wiObj) => {
         let parsed = wiObj.fields["System.Title"].match(/^GH\s#(\d+):\s(.*)/);
         let issue_number = parsed[1];
-        log.trace("Issue:", issue_number);
+        log.debug("Issue:", issue_number);
 
         // Get issue
         var issue = await octokit.rest.issues.get({
@@ -655,16 +654,16 @@ async function updateIssue(config, client, workItem) {
         // Currently checks to see if title, description/body, and state are the same. If so (which means the WorkItem matches the Issue), no updates are necessary
         // Can later add check to see if last entry in history of WorkItem was indeed updated by GitHub
         if (new Date(wiObj.fields["System.ChangedDate"]) > new Date(issue.updated_at)) {
-            log.trace(`WorkItem.ChangedDate (${new Date(wiObj.fields["System.ChangedDate"])}) is more recent than Issue.UpdatedAt (${new Date(issue.updated_at)}). Updating issue...`);
+            log.debug(`WorkItem.ChangedDate (${new Date(wiObj.fields["System.ChangedDate"])}) is more recent than Issue.UpdatedAt (${new Date(issue.updated_at)}). Updating issue...`);
             let title = parsed[2];
             let body = wiObj.fields["System.Description"];
             let state = Object.keys(config.ado.states).find(k => obk[k]==wiObj.fields["System.State"]);
             
             wiObj.fields["System.State"];
 
-            log.trace("Title:", title);
-            log.trace("Body:", body);
-            log.trace("State:", state);
+            log.debug("Title:", title);
+            log.debug("Body:", body);
+            log.debug("State:", state);
 
             if (title != issue.title ||
                 body != issue.body ||
@@ -679,16 +678,16 @@ async function updateIssue(config, client, workItem) {
                 })
 
                 log.debug("Update:", result);
-                log.trace("Issue updated.");
+                log.debug("Issue updated.");
 
                 return result;
             } else {
-                log.trace("Nothing has changed, so skipping.");
+                log.debug("Nothing has changed, so skipping.");
  
                 return null;
             }
         } else {
-            log.trace('Skipping issue update.')
+            log.debug('Skipping issue update.')
  
             return null;
         }
