@@ -1,4 +1,8 @@
 const GitSync = require('./gitsync');
 
-var sync = new GitSync();
-await sync.run();
+run();
+
+async function run() {
+    var sync = new GitSync();
+    await sync.run();
+}
