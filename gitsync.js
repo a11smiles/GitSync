@@ -15,10 +15,10 @@ module.exports = class GitSync {
             const context = github.context;
             const env = process.env;
 
-            let config = getConfig(context.payload, env);
+            let config = this.getConfig(context.payload, env);
             log.debug(config);
 
-            let workItem = await performWork(config);
+            let workItem = await this.performWork(config);
         } catch (exc) {
             log.error(exc);
         }
