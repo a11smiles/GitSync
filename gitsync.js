@@ -316,14 +316,7 @@ module.exports = class GitSync {
             let result = null;
 
             try {
-                result = await client.createWorkItem(
-                    (customHeaders = []),
-                    (document = patchDoc),
-                    (project = config.ado.project),
-                    (type = config.ado.wit),
-                    (validateOnly = false),
-                    (bypassRules = config.ado.bypassRules)
-                );
+                result = await client.createWorkItem([], patchDoc, config.ado.project, config.ado.wit, false, config.ado.bypassRules);
 
                 if (result == null) {
                     log.error("Error: failure creating work item.");
@@ -562,14 +555,7 @@ module.exports = class GitSync {
             let result = null;
 
             try {
-                result = await client.updateWorkItem(
-                (customHeaders = []),
-                (document = patchDoc),
-                (id = workItem.id),
-                (project = config.ado.project),
-                (validateOnly = false),
-                (bypassRules = config.ado.bypassRules)
-                );
+                result = await client.updateWorkItem([], patchDoc, workItem.id, config.ado.project, false, config.ado.bypassRules);
             
                 log.debug(result);
                 log.info("Successfully updated work item:", result.id);
