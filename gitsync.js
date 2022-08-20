@@ -155,7 +155,7 @@ module.exports = class GitSync {
         log.info("Searching for work item...");
         log.debug("AzDO Url:", config.ado.orgUrl);
 
-        let conn = getConnection(config);
+        let conn = this.getConnection(config);
         let client = null;
         let result = null;
         let workItem = null;
