@@ -10,7 +10,7 @@ module.exports = class GitSync {
         log.setLevel(level, true);
     }
 
-    async main() {
+    async run() {
         try {
             const context = github.context;
             const env = process.env;
