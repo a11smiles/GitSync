@@ -1,4 +1,4 @@
-name: "GitSync"
+name: "GitSync: Sync GitHub and Azure DevOps activities"
 description: "A workflow action that syncs GitHub and Azure DevOps activities."
 author: "a11smiles"
 branding: 
