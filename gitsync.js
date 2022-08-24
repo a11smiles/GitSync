@@ -74,6 +74,9 @@ module.exports = class GitSync {
         let labels = seed;
 
         log.debug("Labels:", labelsObj);
+        if (!labelsObj) 
+            return labels;
+
         labelsObj.forEach(label => {
             labels += `GitHub Label: ${label.name};`
         });
@@ -151,7 +154,12 @@ module.exports = class GitSync {
         return workItem;
     }
 
-    async getWorkItem(config) {
+    async getWorkItem(config, skipQuery = false) {
+        if (skipQuery) {
+            log.info("Skipping query...");
+            return null;
+        }
+
         log.info("Searching for work item...");
         log.debug("AzDO Url:", config.ado.orgUrl);
 
@@ -222,10 +230,10 @@ module.exports = class GitSync {
         }
     }
 
-    async createWorkItem(config) {
+    async createWorkItem(config, skipQuery = false) {
         log.info("Creating work item...");
 
-        getWorkItem(config).then(async (workItem) => {
+        return this.getWorkItem(config, skipQuery).then(async (workItem) => {
             if (!!workItem) {
                 log.warn(`Warning: work item (#${workItem.id}) already exists. Canceling creation.`);
                 return 0;
@@ -256,20 +264,20 @@ module.exports = class GitSync {
                 {
                     op: "add",
                     path: "/fields/System.Tags",
-                    value: createLabels(`GitHub Issue;GitHub Repo: ${config.repository.full_name};`, config.issue.labels)
+                    value: this.createLabels(`GitHub Issue;GitHub Repo: ${config.repository.full_name};`, config.issue.labels)
                 },
                 {
                     op: "add",
                     path: "/relations/-",
                     value: {
                     rel: "Hyperlink",
-                    url: cleanUrl(config.issue.url)
+                    url: this.cleanUrl(config.issue.url)
                     }
                 },
                 {
                     op: "add",
                     path: "/fields/System.History",
-                    value: `GitHub issue #${config.issue.number}: <a href="${cleanUrl(config.issue.url)}" target="_new">${config.issue.title}</a> created in <a href="${cleanUrl(config.issue.repository_url)}" target="_blank">${config.repository.full_name}</a> by <a href="${config.issue.user.html_url}" target="_blank">${config.issue.user.login}</a>`
+                    value: `GitHub issue #${config.issue.number}: <a href="${this.cleanUrl(config.issue.url)}" target="_new">${config.issue.title}</a> created in <a href="${this.cleanUrl(config.issue.repository_url)}" target="_blank">${config.repository.full_name}</a> by <a href="${config.issue.user.html_url}" target="_blank">${config.issue.user.login}</a>`
                 }
             ]
 
@@ -278,7 +286,7 @@ module.exports = class GitSync {
                 patchDoc.push({
                     op: "add",
                     path: "/fields/System.AssignedTo",
-                    value: getAssignee(config, true)
+                    value: this.getAssignee(config, true)
                 });
             }
 
@@ -311,7 +319,7 @@ module.exports = class GitSync {
 
             log.debug("Patch document:", patchDoc);
 
-            let conn = getConnection(config);
+            let conn = this.getConnection(config);
             let client = await conn.getWorkItemTrackingApi();
             let result = null;
 
@@ -454,7 +462,7 @@ module.exports = class GitSync {
     async unlabelWorkItem(config) {
         log.info("Removing label from work item...");
 
-        this.getWorkItem(config).then(async (workItem) => {
+        return this.getWorkItem(config).then(async (workItem) => {
             if (!workItem) {
                 log.warn(`Warning: cannot find work item (GitHub Issue #${config.issue.number}). Canceling update.`);
                 return 0;
@@ -464,7 +472,7 @@ module.exports = class GitSync {
                 {
                     op: "replace",
                     path: "/fields/System.Tags",
-                    value: workItem.fields["System.Tags"].replace(createLabels("", [config.label]), "")
+                    value: workItem.fields["System.Tags"].replace(this.createLabels("", [config.label]), "")
                 },
                 {
                     op: "add",
@@ -544,10 +552,15 @@ module.exports = class GitSync {
     }
 
     async updateWorkItem(config, patchDoc) {
-        this.getWorkItem(config).then(async (workItem) => {
+        return this.getWorkItem(config).then(async (workItem) => {
             if (!workItem) {
-                log.warn(`Warning: cannot find work item (GitHub Issue #${config.issue.number}). Canceling update.`);
-                return 0;
+                if (!!config.ado.autoCreate) {
+                    log.warn(`Warning: cannot find work item (GitHub Issue #${config.issue.number}). Creating.`);
+                    workItem = await this.createWorkItem(config, true);
+                } else {
+                    log.warn(`Warning: cannot find work item (GitHub Issue #${config.issue.number}). Canceling update.`);
+                    return 0;
+                }
             }
 
             let conn = this.getConnection(config);
@@ -626,13 +639,13 @@ module.exports = class GitSync {
         const owner = config.GITHUB_REPOSITORY_OWNER;
         const repo = config.GITHUB_REPOSITORY.replace(owner + "/", "");
 
-        log.debug(`[WORKITEM: ${workItem.Id}] Owner:`, owner);
-        log.debug(`[WORKITEM: ${workItem.Id}] Repo:`, repo);
+        log.debug(`[WORKITEM: ${workItem.id}] Owner:`, owner);
+        log.debug(`[WORKITEM: ${workItem.id}] Repo:`, repo);
 
-        client.getWorkItem(workItem.id, ["System.Title", "System.Description", "System.State", "System.ChangedDate"]).then(async (wiObj) => {
+        return client.getWorkItem(workItem.id, ["System.Title", "System.Description", "System.State", "System.ChangedDate"]).then(async (wiObj) => {
             let parsed = wiObj.fields["System.Title"].match(/^GH\s#(\d+):\s(.*)/);
             let issue_number = parsed[1];
-            log.debug(`[WORKITEM: ${workItem.Id} / ISSUE: ${issue_number}] Issue Number:`, issue_number);
+            log.debug(`[WORKITEM: ${workItem.id} / ISSUE: ${issue_number}] Issue Number:`, issue_number);
 
             // Get issue
             var issue = (await octokit.rest.issues.get({
@@ -641,7 +654,7 @@ module.exports = class GitSync {
                 issue_number
             })).data;
 
-            log.debug(`[WORKITEM: ${workItem.Id} / ISSUE: ${issue_number}] Issue:`, issue);
+            log.debug(`[WORKITEM: ${workItem.id} / ISSUE: ${issue_number}] Issue:`, issue);
 
             // Check which is most recent
             // If WorkItem is more recent than Issue, update Issue
@@ -649,17 +662,15 @@ module.exports = class GitSync {
             // Currently checks to see if title, description/body, and state are the same. If so (which means the WorkItem matches the Issue), no updates are necessary
             // Can later add check to see if last entry in history of WorkItem was indeed updated by GitHub
             if (new Date(wiObj.fields["System.ChangedDate"]) > new Date(issue.updated_at)) {
-                log.debug(`[WORKITEM: ${workItem.Id} / ISSUE: ${issue_number}] WorkItem.ChangedDate (${new Date(wiObj.fields["System.ChangedDate"])}) is more recent than Issue.UpdatedAt (${new Date(issue.updated_at)}). Updating issue...`);
+                log.debug(`[WORKITEM: ${workItem.id} / ISSUE: ${issue_number}] WorkItem.ChangedDate (${new Date(wiObj.fields["System.ChangedDate"])}) is more recent than Issue.UpdatedAt (${new Date(issue.updated_at)}). Updating issue...`);
                 let title = parsed[2];
                 let body = wiObj.fields["System.Description"];
                 let states = config.ado.states;
                 let state = Object.keys(states).find(k => states[k]==wiObj.fields["System.State"]);
                 
-                wiObj.fields["System.State"];
-
-                log.debug(`[WORKITEM: ${workItem.Id} / ISSUE: ${issue_number}] Title:`, title);
-                log.debug(`[WORKITEM: ${workItem.Id} / ISSUE: ${issue_number}] Body:`, body);
-                log.debug(`[WORKITEM: ${workItem.Id} / ISSUE: ${issue_number}] State:`, state);
+                log.debug(`[WORKITEM: ${workItem.id} / ISSUE: ${issue_number}] Title:`, title);
+                log.debug(`[WORKITEM: ${workItem.id} / ISSUE: ${issue_number}] Body:`, body);
+                log.debug(`[WORKITEM: ${workItem.id} / ISSUE: ${issue_number}] State:`, state);
 
                 if (title != issue.title ||
                     body != issue.body ||
@@ -674,17 +685,17 @@ module.exports = class GitSync {
                         state 
                     })
 
-                    log.debug(`[WORKITEM: ${workItem.Id} / ISSUE: ${issue_number}] Update:`, result);
-                    log.debug(`[WORKITEM: ${workItem.Id} / ISSUE: ${issue_number}] Issue updated.`);
+                    log.debug(`[WORKITEM: ${workItem.id} / ISSUE: ${issue_number}] Update:`, result);
+                    log.debug(`[WORKITEM: ${workItem.id} / ISSUE: ${issue_number}] Issue updated.`);
 
                     return result;
                 } else {
-                    log.debug(`[WORKITEM: ${workItem.Id} / ISSUE: ${issue_number}] Nothing has changed, so skipping.`);
+                    log.debug(`[WORKITEM: ${workItem.id} / ISSUE: ${issue_number}] Nothing has changed, so skipping.`);
     
                     return null;
                 }
             } else {
-                log.debug(`[WORKITEM: ${workItem.Id} / ISSUE: ${issue_number}] WorkItem.ChangedDate (${new Date(wiObj.fields["System.ChangedDate"])}) is less recent than Issue.UpdatedAt (${new Date(issue.updated_at)}). Skipping issue update...`);
+                log.debug(`[WORKITEM: ${workItem.id} / ISSUE: ${issue_number}] WorkItem.ChangedDate (${new Date(wiObj.fields["System.ChangedDate"])}) is less recent than Issue.UpdatedAt (${new Date(issue.updated_at)}). Skipping issue update...`);
     
                 return null;
             }

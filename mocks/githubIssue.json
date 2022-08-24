@@ -1,0 +1,11 @@
+{
+    "data": {
+        "owner": "someone",
+        "repo": "foo/bar",
+        "issue_number": 100,
+        "updated_at": "2022-01-01",
+        "title": "Testing title",
+        "body": "Some body",
+        "state": "new"
+    }
+}

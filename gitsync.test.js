@@ -2,6 +2,8 @@ const chai = require('chai');
 var sinon = require('sinon');
 const assert = chai.assert;
 chai.use(require('sinon-chai'));
+const proxyquire = require('proxyquire');
+const { DateTime } = require('luxon');
 
 const GitSync = require('./gitsync');
 
@@ -344,11 +346,784 @@ describe("index", () => {
     });
 
     describe("getWorkItem", () => {
+        it("should return null when skipping query", async () => {
+            let sync = new GitSync();
 
+            var result = await sync.getWorkItem(null, true);
+
+            assert.isNull(result);
+        });
+
+        it("should return -1 when error thrown for api request", async () => {
+            const stubbedCore = sinon.stub().callsFake();
+            const proxiedGitSync = proxyquire('./gitsync', {
+                "azure-devops-node-api": {
+                   WebApi: sinon.stub().callsFake(() => {
+                    return {
+                        getWorkItemTrackingApi: sinon.stub().throwsException()
+                    }
+                   })
+                },
+                "@actions/core": {
+                    setFailed: stubbedCore
+                }
+            });
+            
+            let config = {
+                ado: {
+                    orgUrl: "http://google.com",
+                    project: "foobar",
+                    wit: "User Story"
+                },
+                issue: {
+                    number: 12
+                },
+                repository: {
+                    full_name: "foo/bar"
+                }
+            }
+
+            var sync = new proxiedGitSync();
+            var result = await sync.getWorkItem(config);
+
+            assert.equal(result, -1);
+            sinon.assert.called(stubbedCore);
+            sinon.restore();
+        });
+
+        it("should return -1 for no results", async () => {
+            const stubbedCore = sinon.stub().callsFake();
+            const stubbedWorkItemTrackingApi = {
+                queryByWiql: sinon.stub().resolves(null),
+                getWorkItem: sinon.stub().resolves(null)
+            }
+            const proxiedGitSync = proxyquire('./gitsync', {
+                "azure-devops-node-api": {
+                   WebApi: sinon.stub().callsFake(() => {
+                    return {
+                        getWorkItemTrackingApi: sinon.stub().resolves(stubbedWorkItemTrackingApi)
+                    }
+                   })
+                },
+                "@actions/core": {
+                    setFailed: stubbedCore
+                }
+            });
+            
+            let config = {
+                ado: {
+                    orgUrl: "http://google.com",
+                    project: "foobar",
+                    wit: "User Story"
+                },
+                issue: {
+                    number: 12
+                },
+                repository: {
+                    full_name: "foo/bar"
+                }
+            }
+
+            var sync = new proxiedGitSync();
+            var result = await sync.getWorkItem(config);
+
+            sinon.assert.calledWith(stubbedWorkItemTrackingApi.queryByWiql, 
+                { query: "SELECT [System.Id], [System.Description], [System.Title], [System.AssignedTo], [System.State], [System.Tags] FROM workitems WHERE [System.TeamProject] = @project " +
+                    "AND [System.WorkItemType] = '" + config.ado.wit + "'" +
+                    "AND [System.Title] CONTAINS 'GH #" + config.issue.number + ":' " +
+                    "AND [System.Tags] CONTAINS 'GitHub Issue' " +
+                    "AND [System.Tags] CONTAINS 'GitHub Repo: " + config.repository.full_name + "'"
+                },
+                { project: "foobar" }
+            );
+
+            assert.equal(result, -1);
+            sinon.assert.calledWith(stubbedCore, "Error: project name appears to be invalid.");
+            sinon.restore();
+        });
+
+        it("should return -1 for wiql failure", async () => {
+            const stubbedCore = sinon.stub().callsFake();
+            const stubbedWorkItemTrackingApi = {
+                queryByWiql: sinon.stub().throwsException(),
+                getWorkItem: sinon.stub().resolves(null)
+            }
+            const proxiedGitSync = proxyquire('./gitsync', {
+                "azure-devops-node-api": {
+                   WebApi: sinon.stub().callsFake(() => {
+                    return {
+                        getWorkItemTrackingApi: sinon.stub().resolves(stubbedWorkItemTrackingApi)
+                    }
+                   })
+                },
+                "@actions/core": {
+                    setFailed: stubbedCore
+                }
+            });
+            
+            let config = {
+                ado: {
+                    orgUrl: "http://google.com",
+                    project: "foobar",
+                    wit: "User Story"
+                },
+                issue: {
+                    number: 12
+                },
+                repository: {
+                    full_name: "foo/bar"
+                }
+            }
+
+            var sync = new proxiedGitSync();
+            var result = await sync.getWorkItem(config);
+
+            sinon.assert.calledWith(stubbedWorkItemTrackingApi.queryByWiql, 
+                { query: "SELECT [System.Id], [System.Description], [System.Title], [System.AssignedTo], [System.State], [System.Tags] FROM workitems WHERE [System.TeamProject] = @project " +
+                    "AND [System.WorkItemType] = '" + config.ado.wit + "'" +
+                    "AND [System.Title] CONTAINS 'GH #" + config.issue.number + ":' " +
+                    "AND [System.Tags] CONTAINS 'GitHub Issue' " +
+                    "AND [System.Tags] CONTAINS 'GitHub Repo: " + config.repository.full_name + "'"
+                },
+                { project: "foobar" }
+            );
+
+            assert.equal(result, -1);
+            sinon.assert.called(stubbedCore);
+            sinon.restore();
+        });
+
+        it("should return first of multiple work item", async () => {
+            const stubbedWorkItemTrackingApi = {
+                queryByWiql: sinon.stub().resolves(require("./mocks/multipleWorkItems.json")),
+                getWorkItem: sinon.stub().resolves(require("./mocks/workItem.json"))
+            }
+            const proxiedGitSync = proxyquire('./gitsync', {
+                "azure-devops-node-api": {
+                   WebApi: sinon.stub().callsFake(() => {
+                    return {
+                        getWorkItemTrackingApi: sinon.stub().resolves(stubbedWorkItemTrackingApi)
+                    }
+                   })
+                }
+            });
+            
+            let config = {
+                ado: {
+                    orgUrl: "http://google.com",
+                    project: "foobar",
+                    wit: "User Story"
+                },
+                issue: {
+                    number: 12
+                },
+                repository: {
+                    full_name: "foo/bar"
+                }
+            }
+
+            var sync = new proxiedGitSync();
+            var result = await sync.getWorkItem(config);
+
+            sinon.assert.calledWith(stubbedWorkItemTrackingApi.queryByWiql, 
+                { query: "SELECT [System.Id], [System.Description], [System.Title], [System.AssignedTo], [System.State], [System.Tags] FROM workitems WHERE [System.TeamProject] = @project " +
+                    "AND [System.WorkItemType] = '" + config.ado.wit + "'" +
+                    "AND [System.Title] CONTAINS 'GH #" + config.issue.number + ":' " +
+                    "AND [System.Tags] CONTAINS 'GitHub Issue' " +
+                    "AND [System.Tags] CONTAINS 'GitHub Repo: " + config.repository.full_name + "'"
+                },
+                { project: "foobar" }
+            );
+
+            assert.equal(result, require("./mocks/workItem.json"));
+            sinon.restore();
+        });
+
+        it("should return first work item", async () => {
+            const stubbedWorkItemTrackingApi = {
+                queryByWiql: sinon.stub().resolves(require("./mocks/singleWorkItems.json")),
+                getWorkItem: sinon.stub().resolves(require("./mocks/workItem.json"))
+            }
+            const proxiedGitSync = proxyquire('./gitsync', {
+                "azure-devops-node-api": {
+                   WebApi: sinon.stub().callsFake(() => {
+                    return {
+                        getWorkItemTrackingApi: sinon.stub().resolves(stubbedWorkItemTrackingApi)
+                    }
+                   })
+                }
+            });
+            
+            let config = {
+                ado: {
+                    orgUrl: "http://google.com",
+                    project: "foobar",
+                    wit: "User Story"
+                },
+                issue: {
+                    number: 12
+                },
+                repository: {
+                    full_name: "foo/bar"
+                }
+            }
+
+            var sync = new proxiedGitSync();
+            var result = await sync.getWorkItem(config);
+
+            sinon.assert.calledWith(stubbedWorkItemTrackingApi.queryByWiql, 
+                { query: "SELECT [System.Id], [System.Description], [System.Title], [System.AssignedTo], [System.State], [System.Tags] FROM workitems WHERE [System.TeamProject] = @project " +
+                    "AND [System.WorkItemType] = '" + config.ado.wit + "'" +
+                    "AND [System.Title] CONTAINS 'GH #" + config.issue.number + ":' " +
+                    "AND [System.Tags] CONTAINS 'GitHub Issue' " +
+                    "AND [System.Tags] CONTAINS 'GitHub Repo: " + config.repository.full_name + "'"
+                },
+                { project: "foobar" }
+            );
+
+            assert.equal(result, require("./mocks/workItem.json"));
+            sinon.restore();
+        });
+
+        it("should return -1 for no getWorkItem exception", async () => {
+            const stubbedCore = sinon.stub().callsFake();
+            const stubbedWorkItemTrackingApi = {
+                queryByWiql: sinon.stub().resolves(require("./mocks/singleWorkItems.json")),
+                getWorkItem: sinon.stub().throwsException()
+            }
+            const proxiedGitSync = proxyquire('./gitsync', {
+                "azure-devops-node-api": {
+                   WebApi: sinon.stub().callsFake(() => {
+                    return {
+                        getWorkItemTrackingApi: sinon.stub().resolves(stubbedWorkItemTrackingApi)
+                    }
+                   })
+                },
+                "@actions/core": {
+                    setFailed: stubbedCore
+                }
+            });
+            
+            let config = {
+                ado: {
+                    orgUrl: "http://google.com",
+                    project: "foobar",
+                    wit: "User Story"
+                },
+                issue: {
+                    number: 12
+                },
+                repository: {
+                    full_name: "foo/bar"
+                }
+            }
+
+            var sync = new proxiedGitSync();
+            var result = await sync.getWorkItem(config);
+
+            sinon.assert.calledWith(stubbedWorkItemTrackingApi.queryByWiql, 
+                { query: "SELECT [System.Id], [System.Description], [System.Title], [System.AssignedTo], [System.State], [System.Tags] FROM workitems WHERE [System.TeamProject] = @project " +
+                    "AND [System.WorkItemType] = '" + config.ado.wit + "'" +
+                    "AND [System.Title] CONTAINS 'GH #" + config.issue.number + ":' " +
+                    "AND [System.Tags] CONTAINS 'GitHub Issue' " +
+                    "AND [System.Tags] CONTAINS 'GitHub Repo: " + config.repository.full_name + "'"
+                },
+                { project: "foobar" }
+            );
+
+            assert.equal(result, -1);
+            sinon.assert.called(stubbedCore);
+            sinon.restore();
+        });
+
+        it("should return null for no work item", async () => {
+            const stubbedCore = sinon.stub().callsFake();
+            const stubbedWorkItemTrackingApi = {
+                queryByWiql: sinon.stub().resolves({"workItems": []}),
+                getWorkItem: sinon.stub().resolves(null)
+            }
+            const proxiedGitSync = proxyquire('./gitsync', {
+                "azure-devops-node-api": {
+                   WebApi: sinon.stub().callsFake(() => {
+                    return {
+                        getWorkItemTrackingApi: sinon.stub().resolves(stubbedWorkItemTrackingApi)
+                    }
+                   })
+                },
+                "@actions/core": {
+                    setFailed: stubbedCore
+                }
+            });
+            
+            let config = {
+                ado: {
+                    orgUrl: "http://google.com",
+                    project: "foobar",
+                    wit: "User Story"
+                },
+                issue: {
+                    number: 12
+                },
+                repository: {
+                    full_name: "foo/bar"
+                }
+            }
+
+            var sync = new proxiedGitSync();
+            var result = await sync.getWorkItem(config);
+
+            sinon.assert.calledWith(stubbedWorkItemTrackingApi.queryByWiql, 
+                { query: "SELECT [System.Id], [System.Description], [System.Title], [System.AssignedTo], [System.State], [System.Tags] FROM workitems WHERE [System.TeamProject] = @project " +
+                    "AND [System.WorkItemType] = '" + config.ado.wit + "'" +
+                    "AND [System.Title] CONTAINS 'GH #" + config.issue.number + ":' " +
+                    "AND [System.Tags] CONTAINS 'GitHub Issue' " +
+                    "AND [System.Tags] CONTAINS 'GitHub Repo: " + config.repository.full_name + "'"
+                },
+                { project: "foobar" }
+            );
+
+            assert.isNull(result);
+            sinon.restore();
+        });
     });
 
     describe("createWorkItem", () => {
+        it("should return 0", async () => {
+            let now = Date.now();
+            let config = {
+                log_level: 'silent',
+                ado: {
+                    states: { reopened: "New" }
+                },
+                closed_at: now,
+                issue: {
+                    number: 100, 
+                    url: "http://google.com",
+                    title: "foo",
+                    repository_url: "http://google.com",
+                    user: { 
+                        login: "someone",
+                        html_url: "http://google.com"
+                    }
+                },
+                repository: {
+                    full_name: "foo/bar"
+                },
+                label: {
+                    name: "ding"
+                }
+            };
 
+            var sync = new GitSync();
+            sinon.stub(sync, "getWorkItem").resolves(require("./mocks/workItem.json"));
+            
+            var result = await sync.createWorkItem(config);
+
+            assert.equal(result, 0);
+            sinon.restore();
+        });
+
+        it("should create a basic patch document", async () => {
+            const stubbedCore = sinon.stub().callsFake();
+            const stubbedWorkItemTrackingApi = {
+                createWorkItem: sinon.stub().resolves(require("./mocks/workItem.json"))
+            }
+            const proxiedGitSync = proxyquire('./gitsync', {
+                "azure-devops-node-api": {
+                   WebApi: sinon.stub().callsFake(() => {
+                    return {
+                        getWorkItemTrackingApi: sinon.stub().resolves(stubbedWorkItemTrackingApi)
+                    }
+                   })
+                },
+                "@actions/core": {
+                    setFailed: stubbedCore
+                }
+            });
+
+            let now = Date.now();
+            let config = {
+                log_level: 'silent',
+                ado: {
+                    states: { reopened: "New" },
+                    project: "foo",
+                    bypassRules: false,
+                    wit: "User Story"
+                },
+                closed_at: now,
+                issue: {
+                    number: 100, 
+                    url: "http://google.com",
+                    title: "foo",
+                    body: "<h1>Test title</h1>",
+                    user: { 
+                        login: "someone",
+                        html_url: "http://google.com"
+                    },
+                    repository_url: "http://google.com"
+                },
+                repository: {
+                    full_name: "foo/bar"
+                },
+                label: {
+                    name: "baz"
+                }
+            };
+
+            let patchDoc = [
+                {
+                    op: "add",
+                    path: "/fields/System.Title",
+                    value: "GH #100: foo"
+                },
+                {
+                    op: "add",
+                    path: "/fields/System.Description",
+                    value: "<h1>Test title</h1>"
+                },
+                {
+                    op: "add",
+                    path: "/fields/Microsoft.VSTS.TCM.ReproSteps",
+                    value: "<h1>Test title</h1>"
+                },
+                {
+                    op: "add",
+                    path: "/fields/System.Tags",
+                    value: "GitHub Issue;GitHub Repo: foo/bar;"
+                },
+                {
+                    op: "add",
+                    path: "/relations/-",
+                    value: {
+                    rel: "Hyperlink",
+                    url: "http://google.com"
+                    }
+                },
+                {
+                    op: "add",
+                    path: "/fields/System.History",
+                    value: 'GitHub issue #100: <a href="http://google.com" target="_new">foo</a> created in <a href="http://google.com" target="_blank">foo/bar</a> by <a href="http://google.com" target="_blank">someone</a>'
+                }
+            ];
+
+            var sync = new proxiedGitSync();
+            sinon.stub(sync, "getWorkItem").resolves(null);
+
+            var result = await sync.createWorkItem(config);
+
+            assert.equal(result, require("./mocks/workItem.json"));
+            sinon.assert.calledWith(stubbedWorkItemTrackingApi.createWorkItem, [], patchDoc, config.ado.project, config.ado.wit, false, config.ado.bypassRules);
+            sinon.restore();
+        });
+
+        it("should create a full patch document", async () => {
+            const stubbedCore = sinon.stub().callsFake();
+            const stubbedWorkItemTrackingApi = {
+                createWorkItem: sinon.stub().resolves(require("./mocks/workItem.json"))
+            }
+            const proxiedGitSync = proxyquire('./gitsync', {
+                "azure-devops-node-api": {
+                   WebApi: sinon.stub().callsFake(() => {
+                    return {
+                        getWorkItemTrackingApi: sinon.stub().resolves(stubbedWorkItemTrackingApi)
+                    }
+                   })
+                },
+                "@actions/core": {
+                    setFailed: stubbedCore
+                }
+            });
+
+            let now = Date.now();
+            let config = {
+                log_level: 'silent',
+                ado: {
+                    states: { reopened: "New" },
+                    project: "foo",
+                    bypassRules: true,
+                    wit: "User Story",
+                    assignedTo: "noone@nowhere.com",
+                    areaPath: "bar\\fuz",
+                    iterationPath: "bar\\baz",
+                    mappings: {
+                        handles: {
+                            someone: "someone@somewhere.com"
+                        }
+                    }
+                },
+                closed_at: now,
+                issue: {
+                    number: 100, 
+                    url: "http://google.com",
+                    title: "foo",
+                    body: "<h1>Test title</h1>",
+                    user: { 
+                        login: "someone",
+                        html_url: "http://google.com"
+                    },
+                    repository_url: "http://google.com"
+                },
+                repository: {
+                    full_name: "foo/bar"
+                },
+                label: {
+                    name: "baz"
+                }
+            };
+
+            let patchDoc = [
+                {
+                    op: "add",
+                    path: "/fields/System.Title",
+                    value: "GH #100: foo"
+                },
+                {
+                    op: "add",
+                    path: "/fields/System.Description",
+                    value: "<h1>Test title</h1>"
+                },
+                {
+                    op: "add",
+                    path: "/fields/Microsoft.VSTS.TCM.ReproSteps",
+                    value: "<h1>Test title</h1>"
+                },
+                {
+                    op: "add",
+                    path: "/fields/System.Tags",
+                    value: "GitHub Issue;GitHub Repo: foo/bar;"
+                },
+                {
+                    op: "add",
+                    path: "/relations/-",
+                    value: {
+                    rel: "Hyperlink",
+                    url: "http://google.com"
+                    }
+                },
+                {
+                    op: "add",
+                    path: "/fields/System.History",
+                    value: 'GitHub issue #100: <a href="http://google.com" target="_new">foo</a> created in <a href="http://google.com" target="_blank">foo/bar</a> by <a href="http://google.com" target="_blank">someone</a>'
+                },
+                {
+                    op: "add",
+                    path: "/fields/System.AssignedTo",
+                    value: "noone@nowhere.com"
+                },
+                {
+                    op: "add",
+                    path: "/fields/System.AreaPath",
+                    value: "bar\\fuz"
+                },
+                {
+                    op: "add",
+                    path: "/fields/System.IterationPath",
+                    value: "bar\\baz"
+                },
+                {
+                    op: "add",
+                    path: "/fields/System.CreatedBy",
+                    value: "someone"
+                }
+            ];
+
+            var sync = new proxiedGitSync();
+            sinon.stub(sync, "getWorkItem").resolves(null);
+
+            var result = await sync.createWorkItem(config);
+
+            assert.equal(result, require("./mocks/workItem.json"));
+            sinon.assert.calledWith(stubbedWorkItemTrackingApi.createWorkItem, [], patchDoc, config.ado.project, config.ado.wit, false, config.ado.bypassRules);
+            sinon.restore();
+        });
+
+        it("should return -1 for creteWorkItem returning null", async () => {
+            const stubbedCore = sinon.stub().callsFake();
+            const stubbedWorkItemTrackingApi = {
+                createWorkItem: sinon.stub().resolves(null)
+            }
+            const proxiedGitSync = proxyquire('./gitsync', {
+                "azure-devops-node-api": {
+                   WebApi: sinon.stub().callsFake(() => {
+                    return {
+                        getWorkItemTrackingApi: sinon.stub().resolves(stubbedWorkItemTrackingApi)
+                    }
+                   })
+                },
+                "@actions/core": {
+                    setFailed: stubbedCore
+                }
+            });
+
+            let now = Date.now();
+            let config = {
+                log_level: 'silent',
+                ado: {
+                    states: { reopened: "New" },
+                    project: "foo",
+                    bypassRules: false,
+                    wit: "User Story"
+                },
+                closed_at: now,
+                issue: {
+                    number: 100, 
+                    url: "http://google.com",
+                    title: "foo",
+                    body: "<h1>Test title</h1>",
+                    user: { 
+                        login: "someone",
+                        html_url: "http://google.com"
+                    },
+                    repository_url: "http://google.com"
+                },
+                repository: {
+                    full_name: "foo/bar"
+                },
+                label: {
+                    name: "baz"
+                }
+            };
+
+            let patchDoc = [
+                {
+                    op: "add",
+                    path: "/fields/System.Title",
+                    value: "GH #100: foo"
+                },
+                {
+                    op: "add",
+                    path: "/fields/System.Description",
+                    value: "<h1>Test title</h1>"
+                },
+                {
+                    op: "add",
+                    path: "/fields/Microsoft.VSTS.TCM.ReproSteps",
+                    value: "<h1>Test title</h1>"
+                },
+                {
+                    op: "add",
+                    path: "/fields/System.Tags",
+                    value: "GitHub Issue;GitHub Repo: foo/bar;"
+                },
+                {
+                    op: "add",
+                    path: "/relations/-",
+                    value: {
+                    rel: "Hyperlink",
+                    url: "http://google.com"
+                    }
+                },
+                {
+                    op: "add",
+                    path: "/fields/System.History",
+                    value: 'GitHub issue #100: <a href="http://google.com" target="_new">foo</a> created in <a href="http://google.com" target="_blank">foo/bar</a> by <a href="http://google.com" target="_blank">someone</a>'
+                }
+            ];
+
+            var sync = new proxiedGitSync();
+            sinon.stub(sync, "getWorkItem").resolves(null);
+
+            var result = await sync.createWorkItem(config);
+
+            assert.equal(result, -1);
+            sinon.assert.calledWith(stubbedWorkItemTrackingApi.createWorkItem, [], patchDoc, config.ado.project, config.ado.wit, false, config.ado.bypassRules);
+            sinon.assert.called(stubbedCore);
+            sinon.restore();
+        });
+
+        it("should return -1 for failed creteWorkItem", async () => {
+            const stubbedCore = sinon.stub().callsFake();
+            const stubbedWorkItemTrackingApi = {
+                createWorkItem: sinon.stub().throwsException()
+            }
+            const proxiedGitSync = proxyquire('./gitsync', {
+                "azure-devops-node-api": {
+                   WebApi: sinon.stub().callsFake(() => {
+                    return {
+                        getWorkItemTrackingApi: sinon.stub().resolves(stubbedWorkItemTrackingApi)
+                    }
+                   })
+                },
+                "@actions/core": {
+                    setFailed: stubbedCore
+                }
+            });
+
+            let now = Date.now();
+            let config = {
+                log_level: 'silent',
+                ado: {
+                    states: { reopened: "New" },
+                    project: "foo",
+                    bypassRules: false,
+                    wit: "User Story"
+                },
+                closed_at: now,
+                issue: {
+                    number: 100, 
+                    url: "http://google.com",
+                    title: "foo",
+                    body: "<h1>Test title</h1>",
+                    user: { 
+                        login: "someone",
+                        html_url: "http://google.com"
+                    },
+                    repository_url: "http://google.com"
+                },
+                repository: {
+                    full_name: "foo/bar"
+                },
+                label: {
+                    name: "baz"
+                }
+            };
+
+            let patchDoc = [
+                {
+                    op: "add",
+                    path: "/fields/System.Title",
+                    value: "GH #100: foo"
+                },
+                {
+                    op: "add",
+                    path: "/fields/System.Description",
+                    value: "<h1>Test title</h1>"
+                },
+                {
+                    op: "add",
+                    path: "/fields/Microsoft.VSTS.TCM.ReproSteps",
+                    value: "<h1>Test title</h1>"
+                },
+                {
+                    op: "add",
+                    path: "/fields/System.Tags",
+                    value: "GitHub Issue;GitHub Repo: foo/bar;"
+                },
+                {
+                    op: "add",
+                    path: "/relations/-",
+                    value: {
+                    rel: "Hyperlink",
+                    url: "http://google.com"
+                    }
+                },
+                {
+                    op: "add",
+                    path: "/fields/System.History",
+                    value: 'GitHub issue #100: <a href="http://google.com" target="_new">foo</a> created in <a href="http://google.com" target="_blank">foo/bar</a> by <a href="http://google.com" target="_blank">someone</a>'
+                }
+            ];
+
+            var sync = new proxiedGitSync();
+            sinon.stub(sync, "getWorkItem").resolves(null);
+
+            var result = await sync.createWorkItem(config);
+
+            assert.equal(result, -1);
+            sinon.assert.calledWith(stubbedWorkItemTrackingApi.createWorkItem, [], patchDoc, config.ado.project, config.ado.wit, false, config.ado.bypassRules);
+            sinon.assert.called(stubbedCore);
+            sinon.restore();
+        });
     });
 
     describe("closeWorkItem", () => {
@@ -656,8 +1431,8 @@ describe("index", () => {
         });
     });
 
-    xdescribe("unlabelWorkItem", () => {
-        it("should create a patch document", async () => {
+    describe("unlabelWorkItem", () => {
+        it("should return 0", async () => {
             let now = Date.now();
             let config = {
                 log_level: 'silent',
@@ -697,8 +1472,57 @@ describe("index", () => {
             ];
 
             var sync = new GitSync();
-            var stub = sinon.stub(sync, "updateWorkItem").resolves();
+            sinon.stub(sync, "getWorkItem").resolves(null);
             
+            var result = await sync.unlabelWorkItem(config);
+
+            assert.equal(result, 0);
+            sinon.restore();
+        });
+
+        it("should create a patch document", async () => {
+            let now = Date.now();
+            let config = {
+                log_level: 'silent',
+                ado: {
+                    states: { reopened: "New" }
+                },
+                closed_at: now,
+                issue: {
+                    number: 100, 
+                    url: "http://google.com",
+                    title: "foo",
+                    repository_url: "http://google.com",
+                    user: { 
+                        login: "someone",
+                        html_url: "http://google.com"
+                    }
+                },
+                repository: {
+                    full_name: "foo/bar"
+                },
+                label: {
+                    name: "baz"
+                }
+            };
+
+            let patchDoc = [
+                {
+                    op: "replace",
+                    path: "/fields/System.Tags",
+                    value: "GitHub Issue;GitHub Repo: foo/bar;GitHub Label: fiz;"
+                },
+                {
+                    op: "add",
+                    path: "/fields/System.History",
+                    value: 'GitHub issue #100: <a href="http://google.com" target="_new">foo</a> in <a href="http://google.com" target="_blank">foo/bar</a> removal of label \'baz\' by <a href="http://google.com" target="_blank">someone</a>'
+                }
+            ];
+
+            var sync = new GitSync();
+            sinon.stub(sync, "getWorkItem").resolves(require("./mocks/workItem.json"));
+            var stub = sinon.stub(sync, "updateWorkItem").resolves();
+
             await sync.unlabelWorkItem(config);
 
             sinon.assert.calledWith(stub, config, patchDoc);
@@ -900,14 +1724,859 @@ describe("index", () => {
     });
 
     describe("updateWorkItem", () => {
+        it("should return 0", async () => {
+            let now = Date.now();
+            let config = {
+                log_level: 'silent',
+                ado: {
+                    states: { reopened: "New" }
+                },
+                closed_at: now,
+                issue: {
+                    number: 100, 
+                    url: "http://google.com",
+                    title: "foo",
+                    repository_url: "http://google.com",
+                    user: { 
+                        login: "someone",
+                        html_url: "http://google.com"
+                    }
+                },
+                repository: {
+                    full_name: "foo/bar"
+                },
+                label: {
+                    name: "ding"
+                }
+            };
 
+            let patchDoc = [
+                {
+                    op: "add",
+                    path: "/fields/System.Tags",
+                    value: "GitHub Label: ding;"
+                },
+                {
+                op: "add",
+                path: "/fields/System.History",
+                value: 'GitHub issue #100: <a href="http://google.com" target="_new">foo</a> in <a href="http://google.com" target="_blank">foo/bar</a> addition of label \'ding\' by <a href="http://google.com" target="_blank">someone</a>'
+                }
+            ];
+
+            var sync = new GitSync();
+            sinon.stub(sync, "getWorkItem").resolves(null);
+            
+            var result = await sync.updateWorkItem(config);
+
+            assert.equal(result, 0);
+            sinon.restore();
+        });
+
+        it("should create workItem and create a patch document", async () => {
+            const stubbedCore = sinon.stub().callsFake();
+            const stubbedWorkItemTrackingApi = {
+                updateWorkItem: sinon.stub().resolves(require("./mocks/workItem.json"))
+            }
+            const proxiedGitSync = proxyquire('./gitsync', {
+                "azure-devops-node-api": {
+                   WebApi: sinon.stub().callsFake(() => {
+                    return {
+                        getWorkItemTrackingApi: sinon.stub().resolves(stubbedWorkItemTrackingApi)
+                    }
+                   })
+                },
+                "@actions/core": {
+                    setFailed: stubbedCore
+                }
+            });
+
+            let now = Date.now();
+            let config = {
+                log_level: 'silent',
+                ado: {
+                    states: { reopened: "New" },
+                    project: "foo",
+                    bypassRules: true,
+                    autoCreate: true
+                },
+                closed_at: now,
+                issue: {
+                    number: 100, 
+                    url: "http://google.com",
+                    title: "foo",
+                    repository_url: "http://google.com",
+                    user: { 
+                        login: "someone",
+                        html_url: "http://google.com"
+                    }
+                },
+                repository: {
+                    full_name: "foo/bar"
+                },
+                label: {
+                    name: "baz"
+                }
+            };
+
+            let patchDoc = [
+                {
+                    op: "replace",
+                    path: "/fields/System.Tags",
+                    value: "GitHub Issue;GitHub Repo: foo/bar;GitHub Label: fiz;"
+                },
+                {
+                    op: "add",
+                    path: "/fields/System.History",
+                    value: 'GitHub issue #100: <a href="http://google.com" target="_new">foo</a> in <a href="http://google.com" target="_blank">foo/bar</a> removal of label \'baz\' by <a href="http://google.com" target="_blank">someone</a>'
+                }
+            ];
+
+            var sync = new proxiedGitSync("debug");
+            sinon.stub(sync, "getWorkItem").resolves(null);
+            var stub = sinon.stub(sync, "createWorkItem").resolves(require("./mocks/workItem.json"));
+
+            var result = await sync.updateWorkItem(config, patchDoc);
+
+            assert.equal(result, require("./mocks/workItem.json"));
+            sinon.assert.calledWith(stub, config, true);
+            sinon.assert.calledWith(stubbedWorkItemTrackingApi.updateWorkItem, [], patchDoc, 1, config.ado.project, false, config.ado.bypassRules);
+            sinon.restore();
+        });
+
+        it("should create a patch document", async () => {
+            const stubbedCore = sinon.stub().callsFake();
+            const stubbedWorkItemTrackingApi = {
+                updateWorkItem: sinon.stub().resolves(require("./mocks/workItem.json"))
+            }
+            const proxiedGitSync = proxyquire('./gitsync', {
+                "azure-devops-node-api": {
+                   WebApi: sinon.stub().callsFake(() => {
+                    return {
+                        getWorkItemTrackingApi: sinon.stub().resolves(stubbedWorkItemTrackingApi)
+                    }
+                   })
+                },
+                "@actions/core": {
+                    setFailed: stubbedCore
+                }
+            });
+
+            let now = Date.now();
+            let config = {
+                log_level: 'silent',
+                ado: {
+                    states: { reopened: "New" },
+                    project: "foo",
+                    bypassRules: true
+                },
+                closed_at: now,
+                issue: {
+                    number: 100, 
+                    url: "http://google.com",
+                    title: "foo",
+                    repository_url: "http://google.com",
+                    user: { 
+                        login: "someone",
+                        html_url: "http://google.com"
+                    }
+                },
+                repository: {
+                    full_name: "foo/bar"
+                },
+                label: {
+                    name: "baz"
+                }
+            };
+
+            let patchDoc = [
+                {
+                    op: "replace",
+                    path: "/fields/System.Tags",
+                    value: "GitHub Issue;GitHub Repo: foo/bar;GitHub Label: fiz;"
+                },
+                {
+                    op: "add",
+                    path: "/fields/System.History",
+                    value: 'GitHub issue #100: <a href="http://google.com" target="_new">foo</a> in <a href="http://google.com" target="_blank">foo/bar</a> removal of label \'baz\' by <a href="http://google.com" target="_blank">someone</a>'
+                }
+            ];
+
+            var sync = new proxiedGitSync();
+            sinon.stub(sync, "getWorkItem").resolves(require("./mocks/workItem.json"));
+
+            var result = await sync.updateWorkItem(config, patchDoc);
+
+            assert.equal(result, require("./mocks/workItem.json"));
+            sinon.assert.calledWith(stubbedWorkItemTrackingApi.updateWorkItem, [], patchDoc, 1, config.ado.project, false, config.ado.bypassRules);
+            sinon.restore();
+        });
+
+        it("should return -1 for updateWorkItem exception", async () => {
+            const stubbedCore = sinon.stub().callsFake();
+            const stubbedWorkItemTrackingApi = {
+                updateWorkItem: sinon.stub().throwsException()
+            }
+            const proxiedGitSync = proxyquire('./gitsync', {
+                "azure-devops-node-api": {
+                   WebApi: sinon.stub().callsFake(() => {
+                    return {
+                        getWorkItemTrackingApi: sinon.stub().resolves(stubbedWorkItemTrackingApi)
+                    }
+                   })
+                },
+                "@actions/core": {
+                    setFailed: stubbedCore
+                }
+            });
+
+            let now = Date.now();
+            let config = {
+                log_level: 'silent',
+                ado: {
+                    states: { reopened: "New" },
+                    project: "foo",
+                    bypassRules: true
+                },
+                closed_at: now,
+                issue: {
+                    number: 100, 
+                    url: "http://google.com",
+                    title: "foo",
+                    repository_url: "http://google.com",
+                    user: { 
+                        login: "someone",
+                        html_url: "http://google.com"
+                    }
+                },
+                repository: {
+                    full_name: "foo/bar"
+                },
+                label: {
+                    name: "baz"
+                }
+            };
+
+            let patchDoc = [
+                {
+                    op: "replace",
+                    path: "/fields/System.Tags",
+                    value: "GitHub Issue;GitHub Repo: foo/bar;GitHub Label: fiz;"
+                },
+                {
+                    op: "add",
+                    path: "/fields/System.History",
+                    value: 'GitHub issue #100: <a href="http://google.com" target="_new">foo</a> in <a href="http://google.com" target="_blank">foo/bar</a> removal of label \'baz\' by <a href="http://google.com" target="_blank">someone</a>'
+                }
+            ];
+
+            var sync = new proxiedGitSync();
+            sinon.stub(sync, "getWorkItem").resolves(require("./mocks/workItem.json"));
+
+            var result = await sync.updateWorkItem(config, patchDoc);
+
+            assert.equal(result, -1);
+            sinon.assert.calledWith(stubbedWorkItemTrackingApi.updateWorkItem, [], patchDoc, 1, config.ado.project, false, config.ado.bypassRules);
+            sinon.assert.called(stubbedCore);
+            sinon.restore();
+        });
     });
 
     describe("updateIssues", () => {
+        it("should create a patch document", async () => {
+            const stubbedCore = sinon.stub().callsFake();
+            const stubbedWorkItemTrackingApi = {
+                queryByWiql: sinon.stub().resolves(require("./mocks/multipleWorkItems.json"))
+            }
+            const proxiedGitSync = proxyquire('./gitsync', {
+                "azure-devops-node-api": {
+                   WebApi: sinon.stub().callsFake(() => {
+                    return {
+                        getWorkItemTrackingApi: sinon.stub().resolves(stubbedWorkItemTrackingApi)
+                    }
+                   })
+                },
+                "@actions/core": {
+                    setFailed: stubbedCore
+                }
+            });
 
+            let now = Date.now();
+            let config = {
+                log_level: 'silent',
+                ado: {
+                    states: { reopened: "New" },
+                    project: "foo",
+                    bypassRules: true,
+                    wit: "User Story"
+                },
+                closed_at: now,
+                issue: {
+                    number: 100, 
+                    url: "http://google.com",
+                    title: "foo",
+                    repository_url: "http://google.com",
+                    user: { 
+                        login: "someone",
+                        html_url: "http://google.com"
+                    }
+                },
+                repository: {
+                    full_name: "foo/bar"
+                },
+                label: {
+                    name: "baz"
+                },
+                GITHUB_REPOSITORY: "foo/bar"
+            };
+
+            var sync = new proxiedGitSync();
+            var stub = sinon.stub(sync, "updateIssue").resolves(null);
+
+            var result = await sync.updateIssues(config);
+
+            sinon.assert.calledWith(stubbedWorkItemTrackingApi.queryByWiql, 
+                { query:
+                    "SELECT [System.Id], [System.Description], [System.Title], [System.AssignedTo], [System.State], [System.Tags] FROM workitems WHERE [System.TeamProject] = @project " +
+                    "AND [System.WorkItemType] = 'User Story'" +
+                    "AND [System.Tags] CONTAINS 'GitHub Issue' " +
+                    "AND [System.Tags] CONTAINS 'GitHub Repo: foo/bar' " +
+                    "AND [System.ChangedDate] > @Today - 1"
+                },
+                { project: "foo" }
+            );
+            sinon.assert.calledTwice(stub);
+            sinon.restore();
+        });
+
+        it("should return -1 for workItemTrackingApi error", async () => {
+            const stubbedCore = sinon.stub().callsFake();
+            const proxiedGitSync = proxyquire('./gitsync', {
+                "azure-devops-node-api": {
+                   WebApi: sinon.stub().callsFake(() => {
+                    return {
+                        getWorkItemTrackingApi: sinon.stub().throwsException()
+                    }
+                   })
+                },
+                "@actions/core": {
+                    setFailed: stubbedCore
+                }
+            });
+
+            let now = Date.now();
+            let config = {
+                log_level: 'silent',
+                ado: {
+                    states: { reopened: "New" },
+                    project: "foo",
+                    bypassRules: true
+                },
+                closed_at: now,
+                issue: {
+                    number: 100, 
+                    url: "http://google.com",
+                    title: "foo",
+                    repository_url: "http://google.com",
+                    user: { 
+                        login: "someone",
+                        html_url: "http://google.com"
+                    }
+                },
+                repository: {
+                    full_name: "foo/bar"
+                },
+                label: {
+                    name: "baz"
+                }
+            };
+
+            var sync = new proxiedGitSync();
+
+            var result = await sync.updateIssues(config);
+
+            assert.equal(result, -1);
+            sinon.assert.called(stubbedCore);
+            sinon.restore();
+        });
+
+        it("should return -1 for null result", async () => {
+            const stubbedCore = sinon.stub().callsFake();
+            const stubbedWorkItemTrackingApi = {
+                queryByWiql: sinon.stub().resolves(null)
+            }
+            const proxiedGitSync = proxyquire('./gitsync', {
+                "azure-devops-node-api": {
+                   WebApi: sinon.stub().callsFake(() => {
+                    return {
+                        getWorkItemTrackingApi: sinon.stub().resolves(stubbedWorkItemTrackingApi)
+                    }
+                   })
+                },
+                "@actions/core": {
+                    setFailed: stubbedCore
+                }
+            });
+
+            let now = Date.now();
+            let config = {
+                log_level: 'silent',
+                ado: {
+                    states: { reopened: "New" },
+                    project: "foo",
+                    bypassRules: true,
+                    wit: "User Story"
+                },
+                closed_at: now,
+                issue: {
+                    number: 100, 
+                    url: "http://google.com",
+                    title: "foo",
+                    repository_url: "http://google.com",
+                    user: { 
+                        login: "someone",
+                        html_url: "http://google.com"
+                    }
+                },
+                repository: {
+                    full_name: "foo/bar"
+                },
+                label: {
+                    name: "baz"
+                },
+                GITHUB_REPOSITORY: "foo/bar"
+            };
+
+            var sync = new proxiedGitSync();
+            sinon.stub(sync, "updateIssue").resolves(null);
+
+            var result = await sync.updateIssues(config);
+
+            assert.equal(result, -1);
+            sinon.assert.calledWith(stubbedWorkItemTrackingApi.queryByWiql, 
+                { query:
+                    "SELECT [System.Id], [System.Description], [System.Title], [System.AssignedTo], [System.State], [System.Tags] FROM workitems WHERE [System.TeamProject] = @project " +
+                    "AND [System.WorkItemType] = 'User Story'" +
+                    "AND [System.Tags] CONTAINS 'GitHub Issue' " +
+                    "AND [System.Tags] CONTAINS 'GitHub Repo: foo/bar' " +
+                    "AND [System.ChangedDate] > @Today - 1"
+                },
+                { project: "foo" }
+            );
+            sinon.assert.calledWith(stubbedCore, "Error: project name appears to be invalid.");
+            sinon.restore();
+        });
+
+        it("should return -1 for failed queryByWiql", async () => {
+            const stubbedCore = sinon.stub().callsFake();
+            const stubbedWorkItemTrackingApi = {
+                queryByWiql: sinon.stub().throwsException()
+            }
+            const proxiedGitSync = proxyquire('./gitsync', {
+                "azure-devops-node-api": {
+                   WebApi: sinon.stub().callsFake(() => {
+                    return {
+                        getWorkItemTrackingApi: sinon.stub().resolves(stubbedWorkItemTrackingApi)
+                    }
+                   })
+                },
+                "@actions/core": {
+                    setFailed: stubbedCore
+                }
+            });
+
+            let now = Date.now();
+            let config = {
+                log_level: 'silent',
+                ado: {
+                    states: { reopened: "New" },
+                    project: "foo",
+                    bypassRules: true,
+                    wit: "User Story"
+                },
+                closed_at: now,
+                issue: {
+                    number: 100, 
+                    url: "http://google.com",
+                    title: "foo",
+                    repository_url: "http://google.com",
+                    user: { 
+                        login: "someone",
+                        html_url: "http://google.com"
+                    }
+                },
+                repository: {
+                    full_name: "foo/bar"
+                },
+                label: {
+                    name: "baz"
+                },
+                GITHUB_REPOSITORY: "foo/bar"
+            };
+
+            var sync = new proxiedGitSync();
+            sinon.stub(sync, "updateIssue").resolves(null);
+
+            var result = await sync.updateIssues(config);
+
+            assert.equal(result, -1);
+            sinon.assert.calledWith(stubbedWorkItemTrackingApi.queryByWiql, 
+                { query:
+                    "SELECT [System.Id], [System.Description], [System.Title], [System.AssignedTo], [System.State], [System.Tags] FROM workitems WHERE [System.TeamProject] = @project " +
+                    "AND [System.WorkItemType] = 'User Story'" +
+                    "AND [System.Tags] CONTAINS 'GitHub Issue' " +
+                    "AND [System.Tags] CONTAINS 'GitHub Repo: foo/bar' " +
+                    "AND [System.ChangedDate] > @Today - 1"
+                },
+                { project: "foo" }
+            );
+            sinon.assert.called(stubbedCore);
+            sinon.restore();
+        });
     });
 
     describe("updateIssue", () => {
+        it("should update github issue when AzDO change date is newer than github change date and title is different", async () => {
+            let workItem = require("./mocks/workItem.json");
+            let gitHubIssue = require("./mocks/githubIssue.json");
+            gitHubIssue.data.updated_at = DateTime.fromJSDate(new Date(workItem.fields["System.ChangedDate"])).minus({ days: 5}).toJSDate();
 
+            const stubbedCore = sinon.stub().callsFake();
+            const stubbedWorkItemTrackingApi = {
+                getWorkItem: sinon.stub().resolves(workItem)
+            }
+            const stubbedIssues = {
+                get: sinon.stub().resolves(gitHubIssue),
+                update: sinon.stub().resolves()
+            }
+            const proxiedGitSync = proxyquire('./gitsync', {
+                "@actions/github": {
+                    getOctokit: sinon.stub().returns({
+                        rest: {
+                            issues: stubbedIssues
+                        }
+                    })
+                },
+                "@actions/core": {
+                    setFailed: stubbedCore
+                }
+            });
+
+            let now = Date.now();
+            let config = {
+                log_level: 'silent',
+                ado: {
+                    states: { reopened: "New" },
+                    project: "foo",
+                    bypassRules: true,
+                    wit: "User Story",
+                    states: {
+                        new: "New",
+                        closed: "Closed",
+                        reopened: "New",
+                        deleted: "Removed",
+                        active: "Active"
+                    },
+                },
+                closed_at: now,
+                repository: {
+                    full_name: "foo/bar"
+                },
+                label: {
+                    name: "baz"
+                },
+                github: {
+                    token: "blah blah"
+                },
+                GITHUB_REPOSITORY: "foo/bar",
+                GITHUB_REPOSITORY_OWNER: "foo"
+            };
+
+            var sync = new proxiedGitSync();
+            await sync.updateIssue(config, stubbedWorkItemTrackingApi, workItem);
+
+            sinon.assert.calledWith(stubbedIssues.update, { 
+                owner: "foo", 
+                repo: "bar", 
+                issue_number: '12', 
+                title: "title 1", 
+                body: "description 1", 
+                state: "new" 
+            });
+            sinon.restore();
+        });
+
+        it("should update github issue when AzDO change date is newer than github change date and body is different", async () => {
+            let workItem = require("./mocks/workItem.json");
+            workItem.fields["System.Title"] = "GH #12: Testing title";
+            let gitHubIssue = require("./mocks/githubIssue.json");
+            gitHubIssue.data.updated_at = DateTime.fromJSDate(new Date(workItem.fields["System.ChangedDate"])).minus({ days: 5}).toJSDate();
+
+            const stubbedCore = sinon.stub().callsFake();
+            const stubbedWorkItemTrackingApi = {
+                getWorkItem: sinon.stub().resolves(workItem)
+            }
+            const stubbedIssues = {
+                get: sinon.stub().resolves(gitHubIssue),
+                update: sinon.stub().resolves()
+            }
+            const proxiedGitSync = proxyquire('./gitsync', {
+                "@actions/github": {
+                    getOctokit: sinon.stub().returns({
+                        rest: {
+                            issues: stubbedIssues
+                        }
+                    })
+                },
+                "@actions/core": {
+                    setFailed: stubbedCore
+                }
+            });
+
+            let now = Date.now();
+            let config = {
+                log_level: 'silent',
+                ado: {
+                    states: { reopened: "New" },
+                    project: "foo",
+                    bypassRules: true,
+                    wit: "User Story",
+                    states: {
+                        new: "New",
+                        closed: "Closed",
+                        reopened: "New",
+                        deleted: "Removed",
+                        active: "Active"
+                    },
+                },
+                closed_at: now,
+                repository: {
+                    full_name: "foo/bar"
+                },
+                label: {
+                    name: "baz"
+                },
+                github: {
+                    token: "blah blah"
+                },
+                GITHUB_REPOSITORY: "foo/bar",
+                GITHUB_REPOSITORY_OWNER: "foo"
+            };
+
+            var sync = new proxiedGitSync();
+            await sync.updateIssue(config, stubbedWorkItemTrackingApi, workItem);
+
+            sinon.assert.calledWith(stubbedIssues.update, { 
+                owner: "foo", 
+                repo: "bar", 
+                issue_number: '12', 
+                title: "Testing title", 
+                body: "description 1", 
+                state: "new" 
+            });
+            sinon.restore();
+        });
+
+        it("should update github issue when AzDO change date is newer than github change date and state is different", async () => {
+            let workItem = require("./mocks/workItem.json");
+            workItem.fields["System.Title"] = "GH #12: Testing title";
+            workItem.fields["System.Description"] = "Some body";
+            workItem.fields["System.State"] = "Closed";
+            let gitHubIssue = require("./mocks/githubIssue.json");
+            gitHubIssue.data.updated_at = DateTime.fromJSDate(new Date(workItem.fields["System.ChangedDate"])).minus({ days: 5}).toJSDate();
+
+            const stubbedCore = sinon.stub().callsFake();
+            const stubbedWorkItemTrackingApi = {
+                getWorkItem: sinon.stub().resolves(workItem)
+            }
+            const stubbedIssues = {
+                get: sinon.stub().resolves(gitHubIssue),
+                update: sinon.stub().resolves()
+            }
+            const proxiedGitSync = proxyquire('./gitsync', {
+                "@actions/github": {
+                    getOctokit: sinon.stub().returns({
+                        rest: {
+                            issues: stubbedIssues
+                        }
+                    })
+                },
+                "@actions/core": {
+                    setFailed: stubbedCore
+                }
+            });
+
+            let now = Date.now();
+            let config = {
+                log_level: 'silent',
+                ado: {
+                    states: { reopened: "New" },
+                    project: "foo",
+                    bypassRules: true,
+                    wit: "User Story",
+                    states: {
+                        new: "New",
+                        closed: "Closed",
+                        reopened: "New",
+                        deleted: "Removed",
+                        active: "Active"
+                    },
+                },
+                closed_at: now,
+                repository: {
+                    full_name: "foo/bar"
+                },
+                label: {
+                    name: "baz"
+                },
+                github: {
+                    token: "blah blah"
+                },
+                GITHUB_REPOSITORY: "foo/bar",
+                GITHUB_REPOSITORY_OWNER: "foo"
+            };
+
+            var sync = new proxiedGitSync();
+            await sync.updateIssue(config, stubbedWorkItemTrackingApi, workItem);
+
+            sinon.assert.calledWith(stubbedIssues.update, { 
+                owner: "foo", 
+                repo: "bar", 
+                issue_number: '12', 
+                title: "Testing title", 
+                body: "Some body", 
+                state: "closed" 
+            });
+            sinon.restore();
+        });
+
+        it("should not update github issue when AzDO change date is newer than github change date but data is the same", async () => {
+            let workItem = require("./mocks/workItem.json");
+            workItem.fields["System.Title"] = "GH #12: Testing title";
+            workItem.fields["System.Description"] = "Some body";
+            workItem.fields["System.State"] = "New";
+            let gitHubIssue = require("./mocks/githubIssue.json");
+            gitHubIssue.data.updated_at = DateTime.fromJSDate(new Date(workItem.fields["System.ChangedDate"])).minus({ days: 5}).toJSDate();
+
+            const stubbedCore = sinon.stub().callsFake();
+            const stubbedWorkItemTrackingApi = {
+                getWorkItem: sinon.stub().resolves(workItem)
+            }
+            const stubbedIssues = {
+                get: sinon.stub().resolves(gitHubIssue),
+                update: sinon.stub().resolves()
+            }
+            const proxiedGitSync = proxyquire('./gitsync', {
+                "@actions/github": {
+                    getOctokit: sinon.stub().returns({
+                        rest: {
+                            issues: stubbedIssues
+                        }
+                    })
+                },
+                "@actions/core": {
+                    setFailed: stubbedCore
+                }
+            });
+
+            let now = Date.now();
+            let config = {
+                log_level: 'silent',
+                ado: {
+                    states: { reopened: "New" },
+                    project: "foo",
+                    bypassRules: true,
+                    wit: "User Story",
+                    states: {
+                        new: "New",
+                        closed: "Closed",
+                        reopened: "New",
+                        deleted: "Removed",
+                        active: "Active"
+                    },
+                },
+                closed_at: now,
+                repository: {
+                    full_name: "foo/bar"
+                },
+                label: {
+                    name: "baz"
+                },
+                github: {
+                    token: "blah blah"
+                },
+                GITHUB_REPOSITORY: "foo/bar",
+                GITHUB_REPOSITORY_OWNER: "foo"
+            };
+
+            var sync = new proxiedGitSync();
+            var result = await sync.updateIssue(config, stubbedWorkItemTrackingApi, workItem);
+
+            assert.isNull(result);
+            sinon.assert.notCalled(stubbedIssues.update);
+            sinon.restore();
+        });
+
+        it("should not update github issue when AzDO change date is newer than github change date", async () => {
+            let workItem = require("./mocks/workItem.json");
+            let gitHubIssue = require("./mocks/githubIssue.json");
+            gitHubIssue.data.updated_at = DateTime.fromJSDate(new Date(workItem.fields["System.ChangedDate"])).plus({ days: 5}).toJSDate();
+
+            const stubbedCore = sinon.stub().callsFake();
+            const stubbedWorkItemTrackingApi = {
+                getWorkItem: sinon.stub().resolves(workItem)
+            }
+            const stubbedIssues = {
+                get: sinon.stub().resolves(gitHubIssue),
+                update: sinon.stub().resolves()
+            }
+            const proxiedGitSync = proxyquire('./gitsync', {
+                "@actions/github": {
+                    getOctokit: sinon.stub().returns({
+                        rest: {
+                            issues: stubbedIssues
+                        }
+                    })
+                },
+                "@actions/core": {
+                    setFailed: stubbedCore
+                }
+            });
+
+            let now = Date.now();
+            let config = {
+                log_level: 'silent',
+                ado: {
+                    states: { reopened: "New" },
+                    project: "foo",
+                    bypassRules: true,
+                    wit: "User Story",
+                    states: {
+                        new: "New",
+                        closed: "Closed",
+                        reopened: "New",
+                        deleted: "Removed",
+                        active: "Active"
+                    },
+                },
+                closed_at: now,
+                repository: {
+                    full_name: "foo/bar"
+                },
+                label: {
+                    name: "baz"
+                },
+                github: {
+                    token: "blah blah"
+                },
+                GITHUB_REPOSITORY: "foo/bar",
+                GITHUB_REPOSITORY_OWNER: "foo"
+            };
+
+            var sync = new proxiedGitSync();
+            var result = await sync.updateIssue(config, stubbedWorkItemTrackingApi, workItem);
+
+            assert.isNull(result);
+            sinon.restore();
+        });
     });
 });

@@ -1,0 +1,11 @@
+{
+    "workItems" : [
+        {
+            "id": 1,
+            "System.Title": "GH #12: title 1",
+            "System.Description": "description 1",
+            "System.WorkItemType": "User Story",
+            "System.State": "In Progress"
+        }
+    ]
+}

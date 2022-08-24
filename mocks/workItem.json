@@ -1,0 +1,11 @@
+{
+    "id": 1,
+    "fields": {
+        "System.Title": "GH #12: title 1",
+        "System.Description": "description 1",
+        "System.WorkItemType": "User Story",
+        "System.State": "New",
+        "System.Tags": "GitHub Issue;GitHub Repo: foo/bar;GitHub Label: fiz;GitHub Label: baz;",
+        "System.ChangedDate": "2020-01-01"
+    }
+}
