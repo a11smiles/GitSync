@@ -47,7 +47,7 @@ log.debug("jjd: " + envAdo);
             ...env,
             ado: {
                 ...(configJSON && configJSON.ado ? configJSON.ado : {}),
-                ...(envAdo)
+                envAdo
             },
             github: {
                 ...(configJSON && configJSON.github ? configJSON.github : {}),
