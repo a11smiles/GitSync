@@ -149,7 +149,7 @@ That's it! Now your mappings in the environment variable will _override_ any map
 
 > **NOTE:** May sure you save the secret's content/configuration somewhere. As you know, if you needed to update the configuration later, you would need to re-type everything as the secret isn't exposed when editing.
 
-> **IMPORTANT:** The default `log_level` is _debug_. This means that the action will print the configuration in the logs. Once you have completed your testing, change the `log_level` to _warn_ or _error_ in order to conceal whatever you have in your configuration.
+> **IMPORTANT:** The default `log_level` is _info_. If you change this to _trace_ or _debug_, the action will print the configuration in the logs. Once you have completed your testing, change the `log_level` back to _info_ or higher in order to conceal whatever you have in your configuration.
 
 ## Synchronization
 
