@@ -97,7 +97,7 @@ Below are the settings contained in the config file. Note, besides the `log_leve
 
 | Setting | Required | Description |
 | ---     | :---:    | ---         |
-| `log_level` | No | Determines how much information is shown from the workflow execution. The available options are `trace`, `debug`, `info`, `warn`, and `error`. |
+| `log_level` | No | Determines how much information is shown from the workflow execution. The available options are `trace`, `debug`, `info`, `warn`, and `error`.<br /><br />Default: `info`|
 | `ado.organization` | Yes | The name of your Azure DevOps organization. |
 | `ado.project` | Yes | The name of your Azure Devops project. |
 | `ado.wit` | Yes | The work item type to be associated with GitHub issues. |

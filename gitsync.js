@@ -64,7 +64,7 @@ module.exports = class GitSync {
             console.log(`Setting logLevel to ${config.log_level.toLowerCase()}...`);
             log.setLevel(config.log_level.toLowerCase(), true);
         } else {
-            log.setLevel("debug", true);
+            log.setLevel("info", true);
         }
 
         return config;
