@@ -44,7 +44,7 @@ module.exports = class GitSync {
             ado: {
                 ...(payload && payload.ado ? payload.ado : {}),
                 ...(configJSON && configJSON.ado ? configJSON.ado : {}),
-                ...(env && env.ado ? env.ado : {})
+                ...(env && env.ado ? Object.keys(env.ado).reduce((prev, curr) => prev + (env.ado[curr] != "***" ? env.ado[curr] :''), '') : {})
             },
             github: {
                 ...(payload && payload.github ? payload.github : {}),
