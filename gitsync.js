@@ -4,7 +4,6 @@ const core = require('@actions/core');
 const github = require('@actions/github');
 const azdo = require('azure-devops-node-api');
 const showdown = require('showdown');
-const { config } = require('process');
 
 module.exports = class GitSync {
     constructor(level = "silent") {
@@ -42,6 +41,7 @@ module.exports = class GitSync {
         let inputAdo = !!core.getInput('ado') ? JSON.parse(core.getInput('ado')) : { ado: {}};
         let inputGitHub = !!core.getInput('github') ? JSON.parse(core.getInput('github')) : { github: {}};
         let config = {
+            log_level: (configJSON && configJSON.log_level ? configJSON.log_level : undefined), 
             ...payload,
             ...env,
             ado: {
