@@ -101,6 +101,58 @@ describe("index", () => {
             
             assert.notStrictEqual(configJson, config);
         });
+
+        it("should should merge env ado config", () => {
+            var sync = new GitSync();
+            var config = sync.getConfig(null, {
+                ado_token: 'adoToken',
+                github_token: 'githubToken',
+                config_file: './mocks/config.json',
+                ado: {
+                    areaPath: "something\\else",
+                    mappings: {
+                        handles: {
+                            foo1: 'bar1',
+                            foo2: 'bar2'
+                        }
+                    }
+                }
+            });
+            
+            let configJson = {
+                ado_token: 'adoToken',
+                github_token: 'githubToken',
+                config_file: './mocks/config.json',
+                ado: { 
+                    token: 'adoToken',
+                    organization: "foo",
+                    project: "bar",
+                    orgUrl: "https://dev.azure.com/foo",
+                    wit: "User Story",
+                    states: {
+                        new: "New",
+                        closed: "Closed",
+                        reopened: "New",
+                        deleted: "Removed",
+                        active: "Active"
+                    },
+                    bypassRules: true,
+                    autoCreate: true,
+                    assignedTo: "noone@nowhere.com",
+                    areaPath: "something\\else",
+                    iterationPath: "bar\\baz",
+                    mappings: {
+                        handles: {
+                            foo1: 'bar1',
+                            foo2: 'bar2'
+                        }
+                    }
+                },
+                github: { token: 'githubToken' }
+            };
+            console.log(config);
+            assert.notStrictEqual(configJson, config);
+        });
     });
 
     describe("cleanUrl", () => {
@@ -1831,7 +1883,7 @@ describe("index", () => {
                 }
             ];
 
-            var sync = new proxiedGitSync("debug");
+            var sync = new proxiedGitSync();
             sinon.stub(sync, "getWorkItem").resolves(null);
             var stub = sinon.stub(sync, "createWorkItem").resolves(require("./mocks/workItem.json"));
 

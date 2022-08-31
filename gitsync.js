@@ -4,6 +4,7 @@ const core = require('@actions/core');
 const github = require('@actions/github');
 const azdo = require('azure-devops-node-api');
 const showdown = require('showdown');
+const { config } = require('process');
 
 module.exports = class GitSync {
     constructor(level = "silent") {
@@ -36,14 +37,20 @@ module.exports = class GitSync {
             } catch {
                 console.log("JSON configuration file not found.");
             };
-        }    
+        }   
 
         let config = {
-            ado: {},
-            github: {},
-            ...payload,
-            ...configJSON,
-            ...env
+            ...env,
+            ado: {
+                ...(payload && payload.ado ? payload.ado : {}),
+                ...(configJSON && configJSON.ado ? configJSON.ado : {}),
+                ...(env && env.ado ? env.ado : {})
+            },
+            github: {
+                ...(payload && payload.github ? payload.github : {}),
+                ...(configJSON && configJSON.github ? configJSON.github : {}),
+                ...(env && env.github ? env.github : {})
+            }
         };
 
         config.ado.orgUrl = `https://dev.azure.com/${config.ado.organization}`;

@@ -109,6 +109,43 @@ Below are the settings contained in the config file. Note, besides the `log_leve
 | `ado.iterationPath` | No | The default iteration path to assign the new work item.<br /><br />**NOTE:** The iteration path must begin with the project name and you must use double (escaped) backslashes as separators. |
 | `ado.mappings.handles` | No | Allows you to map GitHub aliases (or handles) to Azure DevOps users. Simply provide a collection of mappings following the format of alias/handle to user email address. |
 
+### GitHub Secrets Configuration
+
+You are not required to use the configuration JSON file entirely. For example, you may wish keep the email addresses hidden. In that case, you would simply pass an environment variable named `ado` and/or `github` with your configurations.
+
+> **NOTE:** Any configuration path provided in the environment variables will overwrite the corresponding paths in the configuration file.
+
+For an alternative approach to storing GitHub alias mappings (again, this is just one example, but can be applied to any path), you would do the following (I'm also overriding the Area Path, to further illustrate the process):
+
+1. Create a GitHub secret. I'll call it `ADO_CONFIG`. It should have the following content (notice that it's a copy of the `ado` object's structure):
+
+   ```json
+    {
+        "areaPath": "my_project\\Some Other Path",
+        "mappings": {
+            "handles": {
+                "user_a": "user.a@myorganization.com",
+                "user_b": "user.b@myorganization.com"
+            }
+        }
+    }
+   ```
+
+2. In your yaml file add the secret as a mapping to an `ado` environment variable (notice the last line):
+
+    ```yaml
+    - uses: a11smiles/GitSync@main
+      env:     
+        ado_token: '${{ secrets.ADO_PERSONAL_ACCESS_TOKEN }}'
+        github_token: '${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}'
+        config_file: './.github/workflows/sync_config.json'
+        ado: '${{ secrets.ADO_CONFIG }}'
+    ```
+
+That's it! Now your mappings in the environment variable will _override_ any mappings provided in the JSON configuration file.
+
+> **NOTE:** May sure you save the secret's content/configuration somewhere. As you know, if you needed to update the configuration later, you would need to re-type everything as the secret isn't exposed when editing.
+
 ## Synchronization
 
 | Direction |  |
