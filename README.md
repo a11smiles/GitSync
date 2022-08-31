@@ -97,7 +97,7 @@ Below are the settings contained in the config file. Note, besides the `log_leve
 
 | Setting | Required | Description |
 | ---     | :---:    | ---         |
-| `log_level` | No | Determines how much information is shown from the workflow execution. The available options are `trace`, `debug`, `info`, `warn`. |
+| `log_level` | No | Determines how much information is shown from the workflow execution. The available options are `trace`, `debug`, `info`, `warn`, and `error`. |
 | `ado.organization` | Yes | The name of your Azure DevOps organization. |
 | `ado.project` | Yes | The name of your Azure Devops project. |
 | `ado.wit` | Yes | The work item type to be associated with GitHub issues. |
@@ -117,15 +117,17 @@ You are not required to use the configuration JSON file entirely. For example, y
 
 For an alternative approach to storing GitHub alias mappings (again, this is just one example, but can be applied to any path), you would do the following (I'm also overriding the Area Path, to further illustrate the process):
 
-1. Create a GitHub secret. I'll call it `ADO_CONFIG`. It should have the following content (notice that it's a copy of the `ado` object's structure):
+1. Create a GitHub secret. I'll call it `ADO_CONFIG`. It should have the following content (notice that it's a copy of the `ado` object's structure in the JSON file):
 
    ```json
     {
-        "areaPath": "my_project\\Some Other Path",
-        "mappings": {
-            "handles": {
-                "user_a": "user.a@myorganization.com",
-                "user_b": "user.b@myorganization.com"
+        "ado": {
+            "areaPath": "my_project\\Some Other Path",
+            "mappings": {
+                "handles": {
+                    "user_a": "user.a@myorganization.com",
+                    "user_b": "user.b@myorganization.com"
+                }
             }
         }
     }
@@ -139,12 +141,15 @@ For an alternative approach to storing GitHub alias mappings (again, this is jus
         ado_token: '${{ secrets.ADO_PERSONAL_ACCESS_TOKEN }}'
         github_token: '${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}'
         config_file: './.github/workflows/sync_config.json'
+      with:
         ado: '${{ secrets.ADO_CONFIG }}'
     ```
 
 That's it! Now your mappings in the environment variable will _override_ any mappings provided in the JSON configuration file.
 
 > **NOTE:** May sure you save the secret's content/configuration somewhere. As you know, if you needed to update the configuration later, you would need to re-type everything as the secret isn't exposed when editing.
+
+> **IMPORTANT:** The default `log_level` is _debug_. This means that the action will print the configuration in the logs. Once you have completed your testing, change the `log_level` to _warn_ or _error_ in order to conceal whatever you have in your configuration.
 
 ## Synchronization
 

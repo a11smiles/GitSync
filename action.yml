@@ -11,3 +11,6 @@ inputs:
   ado:
     description: "An alternate Azure DevOps configuration from GitHub secrets"
     required: false
+  ado:
+    description: "An alternate GitHub configuration from GitHub secrets"
+    required: false
