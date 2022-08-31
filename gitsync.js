@@ -40,7 +40,7 @@ module.exports = class GitSync {
         }   
 
 //        let envAdo = env && env.ado ? JSON.parse(Object.keys(env.ado).reduce((prev, curr) => prev + env.ado[curr], '').replace(/: \*\*\*/g, ": {").replace(/\*\*\*/, "{").replace(/\*\*\*/g, "}")) : {};
-        let inputAdo = !!core.getInput('ado') ? JSON.parse(JSON.stringify(core.getInput('ado'))) : { ado: {}};
+        let inputAdo = !!core.getInput('ado') ? JSON.parse(core.getInput('ado')) : { ado: {}};
 log.debug("jjd: " + inputAdo.ado);
         let config = {
             ...payload,
