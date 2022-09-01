@@ -145,7 +145,7 @@ For an alternative approach to storing GitHub alias mappings (again, this is jus
         ado: '${{ secrets.ADO_CONFIG }}'
     ```
 
-That's it! Now your mappings in the environment variable will _override_ any mappings provided in the JSON configuration file.
+That's it! Now your mappings in the GitHub secret provided through the input variable will _override_ any mappings provided in the JSON configuration file.
 
 > **NOTE:** May sure you save the secret's content/configuration somewhere. As you know, if you needed to update the configuration later, you would need to re-type everything as the secret isn't exposed when editing.
 
