@@ -133,7 +133,7 @@ For an alternative approach to storing GitHub alias mappings (again, this is jus
     }
    ```
 
-2. In your yaml file add the secret as a mapping to an `ado` environment variable (notice the last line):
+2. In your yaml file add the secret as a mapping to an `ado` input variable (notice the last line):
 
     ```yaml
     - uses: a11smiles/GitSync@main
