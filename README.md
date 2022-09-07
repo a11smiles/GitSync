@@ -145,7 +145,7 @@ For an alternative approach to storing GitHub alias mappings (again, this is jus
         ado: ${{ secrets.ADO_CONFIG }}
     ```
 
-> **NOTE:** Make sure there is NO single or double quotes around the `ado` secrets reference.
+> **NOTE:** Make sure there are NO single or double quotes around the `ado` secrets reference.
 
 That's it! Now your mappings in the GitHub secret provided through the input variable will _override_ any mappings provided in the JSON configuration file.
 
