@@ -2,8 +2,9 @@ const chai = require('chai');
 var sinon = require('sinon');
 const assert = chai.assert;
 chai.use(require('sinon-chai'));
-const proxyquire = require('proxyquire');
+const proxyquire = require('proxyquire').noPreserveCache();
 const { DateTime } = require('luxon');
+const decache = require('decache');
 
 const GitSync = require('./gitsync');
 
@@ -2355,6 +2356,8 @@ describe("index", () => {
                 state: "new" 
             });
             sinon.restore();
+            decache("./mocks/workItem.json");
+            decache("./mocks/githubIssue.json");
         });
 
         it("should update github issue when AzDO change date is newer than github change date and body is different", async () => {
@@ -2426,6 +2429,8 @@ describe("index", () => {
                 state: "new" 
             });
             sinon.restore();
+            decache("./mocks/workItem.json");
+            decache("./mocks/githubIssue.json");
         });
 
         it("should update github issue when AzDO change date is newer than github change date and state is different", async () => {
@@ -2499,11 +2504,157 @@ describe("index", () => {
                 state: "closed" 
             });
             sinon.restore();
+            decache("./mocks/workItem.json");
+            decache("./mocks/githubIssue.json");
         });
+
+        it("should successfully convert html code blocks back to markdown and not update github issue when equal", async () => {
+            let workItem = require("./mocks/workItemCode.json");
+            workItem.fields["System.Description"] = "testing<br />" + workItem.fields["System.Description"];
+            workItem.fields["System.Title"] = "GH #12: Testing title";
+            let gitHubIssue = require("./mocks/githubIssue.json");
+            gitHubIssue.data.updated_at = DateTime.fromJSDate(new Date(workItem.fields["System.ChangedDate"])).minus({ days: 5}).toJSDate();
+            gitHubIssue.data.body = "testing\n<pre>public class Foo() {\n    var number = 0;\n    var text = \"Hello World!\";\n    return 0;\n}</pre>";
+
+            const stubbedCore = sinon.stub().callsFake();
+            const stubbedWorkItemTrackingApi = {
+                getWorkItem: sinon.stub().resolves(workItem)
+            }
+            const stubbedIssues = {
+                get: sinon.stub().resolves(gitHubIssue),
+                update: sinon.stub().resolves()
+            }
+            const proxiedGitSync = proxyquire('./gitsync', {
+                "@actions/github": {
+                    getOctokit: sinon.stub().returns({
+                        rest: {
+                            issues: stubbedIssues
+                        }
+                    })
+                },
+                "@actions/core": {
+                    setFailed: stubbedCore
+                }
+            });
+
+            let now = Date.now();
+            let config = {
+                log_level: 'silent',
+                ado: {
+                    states: { reopened: "New" },
+                    project: "foo",
+                    bypassRules: true,
+                    wit: "User Story",
+                    states: {
+                        new: "New",
+                        closed: "Closed",
+                        reopened: "New",
+                        deleted: "Removed",
+                        active: "Active"
+                    },
+                },
+                closed_at: now,
+                repository: {
+                    full_name: "foo/bar"
+                },
+                label: {
+                    name: "baz"
+                },
+                github: {
+                    token: "blah blah"
+                },
+                GITHUB_REPOSITORY: "foo/bar",
+                GITHUB_REPOSITORY_OWNER: "foo"
+            };
+
+            var sync = new proxiedGitSync();
+            var result = await sync.updateIssue(config, stubbedWorkItemTrackingApi, workItem);
+
+            assert.isNull(result);
+            sinon.assert.notCalled(stubbedIssues.update);
+            sinon.restore();
+            decache("./mocks/workItemCode.json");
+            decache("./mocks/githubIssue.json");
+        });      
+        
+        it("should successfully convert html code blocks back to markdown and update github issue when not equal", async () => {
+            let workItem = require("./mocks/workItemCode.json");
+            workItem.fields["System.Description"] = "testing<br \>some more<br \>" + workItem.fields["System.Description"];
+            workItem.fields["System.Title"] = "GH #12: Testing title";
+            let gitHubIssue = require("./mocks/githubIssue.json");
+            gitHubIssue.data.updated_at = DateTime.fromJSDate(new Date(workItem.fields["System.ChangedDate"])).minus({ days: 5}).toJSDate();
+            gitHubIssue.data.body = "testing\n\n<pre>public class Foo() {\n    var number = 0;\n    var text = \"Hello World!\";\n    return 0;\n}</pre>";
+
+            const stubbedCore = sinon.stub().callsFake();
+            const stubbedWorkItemTrackingApi = {
+                getWorkItem: sinon.stub().resolves(workItem)
+            }
+            const stubbedIssues = {
+                get: sinon.stub().resolves(gitHubIssue),
+                update: sinon.stub().resolves()
+            }
+            const proxiedGitSync = proxyquire('./gitsync', {
+                "@actions/github": {
+                    getOctokit: sinon.stub().returns({
+                        rest: {
+                            issues: stubbedIssues
+                        }
+                    })
+                },
+                "@actions/core": {
+                    setFailed: stubbedCore
+                }
+            });
+
+            let now = Date.now();
+            let config = {
+                log_level: 'silent',
+                ado: {
+                    states: { reopened: "New" },
+                    project: "foo",
+                    bypassRules: true,
+                    wit: "User Story",
+                    states: {
+                        new: "New",
+                        closed: "Closed",
+                        reopened: "New",
+                        deleted: "Removed",
+                        active: "Active"
+                    },
+                },
+                closed_at: now,
+                repository: {
+                    full_name: "foo/bar"
+                },
+                label: {
+                    name: "baz"
+                },
+                github: {
+                    token: "blah blah"
+                },
+                GITHUB_REPOSITORY: "foo/bar",
+                GITHUB_REPOSITORY_OWNER: "foo"
+            };
+
+            var sync = new proxiedGitSync();
+            await sync.updateIssue(config, stubbedWorkItemTrackingApi, workItem);
+
+            sinon.assert.calledWith(stubbedIssues.update, { 
+                owner: "foo", 
+                repo: "bar", 
+                issue_number: '12', 
+                title: "Testing title", 
+                body: "testing\nsome more\n<pre>public class Foo() {\n    var number = 0;\n    var text = \"Hello World!\";\n    return 0;\n}</pre>", 
+                state: "new" 
+            });
+            sinon.restore();
+            decache("./mocks/workItemCode.json");
+            decache("./mocks/githubIssue.json");
+        });    
 
         it("should not update github issue when AzDO change date is newer than github change date but data is the same", async () => {
             let workItem = require("./mocks/workItem.json");
-            workItem.fields["System.Title"] = "GH #12: Testing title";
+            workItem.fields["System.Title"] = "GH #14: Testing title";
             workItem.fields["System.Description"] = "Some body";
             workItem.fields["System.State"] = "New";
             let gitHubIssue = require("./mocks/githubIssue.json");
@@ -2566,6 +2717,8 @@ describe("index", () => {
             assert.isNull(result);
             sinon.assert.notCalled(stubbedIssues.update);
             sinon.restore();
+            decache("./mocks/workItem.json");
+            decache("./mocks/githubIssue.json");
         });
 
         it("should not update github issue when AzDO change date is newer than github change date", async () => {
@@ -2629,6 +2782,8 @@ describe("index", () => {
 
             assert.isNull(result);
             sinon.restore();
+            decache("./mocks/workItem.json");
+            decache("./mocks/githubIssue.json");
         });
     });
 });

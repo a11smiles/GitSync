@@ -4,8 +4,13 @@ const core = require('@actions/core');
 const github = require('@actions/github');
 const azdo = require('azure-devops-node-api');
 const showdown = require('showdown');
+showdown.setFlavor('github');
+
+const JSDOM = require('jsdom').JSDOM;
+;(globalThis).window = new JSDOM('', {}).window;
 
 module.exports = class GitSync {
+
     constructor(level = "silent") {
         log.setLevel(level, true);
     }
@@ -646,12 +651,14 @@ module.exports = class GitSync {
         const octokit = new github.getOctokit(config.github.token);
         const owner = config.GITHUB_REPOSITORY_OWNER;
         const repo = config.GITHUB_REPOSITORY.replace(owner + "/", "");
+        var converter = new showdown.Converter();
 
         log.debug(`[WORKITEM: ${workItem.id}] Owner:`, owner);
         log.debug(`[WORKITEM: ${workItem.id}] Repo:`, repo);
 
         return client.getWorkItem(workItem.id, ["System.Title", "System.Description", "System.State", "System.ChangedDate"]).then(async (wiObj) => {
             let parsed = wiObj.fields["System.Title"].match(/^GH\s#(\d+):\s(.*)/);
+
             let issue_number = parsed[1];
             log.debug(`[WORKITEM: ${workItem.id} / ISSUE: ${issue_number}] Issue Number:`, issue_number);
 
@@ -672,7 +679,8 @@ module.exports = class GitSync {
             if (new Date(wiObj.fields["System.ChangedDate"]) > new Date(issue.updated_at)) {
                 log.debug(`[WORKITEM: ${workItem.id} / ISSUE: ${issue_number}] WorkItem.ChangedDate (${new Date(wiObj.fields["System.ChangedDate"])}) is more recent than Issue.UpdatedAt (${new Date(issue.updated_at)}). Updating issue...`);
                 let title = parsed[2];
-                let body = wiObj.fields["System.Description"];
+                let body = converter.makeMarkdown(wiObj.fields["System.Description"]).replace(/(^(\r\n|\n|\r)$)|(^(\r\n|\n|\r))|^\s*$/gm, "").replace(/<br>/g, "").trim();
+
                 let states = config.ado.states;
                 let state = Object.keys(states).find(k => states[k]==wiObj.fields["System.State"]);
                 

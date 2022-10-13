@@ -28,11 +28,13 @@
     "@actions/github": "^5.0.3",
     "azure-devops-node-api": "^11.2.0",
     "fs": "^0.0.1-security",
+    "jsdom": "^20.0.1",
     "loglevel": "^1.8.0",
     "showdown": "^2.1.0"
   },
   "devDependencies": {
     "chai": "^4.3.6",
+    "decache": "^4.6.1",
     "esm": "^3.2.25",
     "jasmine": "^4.3.0",
     "jasmine-spec-reporter": "^7.0.0",
