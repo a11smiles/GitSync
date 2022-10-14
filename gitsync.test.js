@@ -2514,7 +2514,7 @@ describe("index", () => {
             workItem.fields["System.Title"] = "GH #12: Testing title";
             let gitHubIssue = require("./mocks/githubIssue.json");
             gitHubIssue.data.updated_at = DateTime.fromJSDate(new Date(workItem.fields["System.ChangedDate"])).minus({ days: 5}).toJSDate();
-            gitHubIssue.data.body = "testing\n<pre>public class Foo() {\n    var number = 0;\n    var text = \"Hello World!\";\n    return 0;\n}</pre>";
+            gitHubIssue.data.body = "testing\n\n<pre>public class Foo() {\n    var number = 0;\n    var text = \"Hello World!\";\n    return 0;\n}</pre>";
 
             const stubbedCore = sinon.stub().callsFake();
             const stubbedWorkItemTrackingApi = {
@@ -2583,7 +2583,7 @@ describe("index", () => {
             workItem.fields["System.Title"] = "GH #12: Testing title";
             let gitHubIssue = require("./mocks/githubIssue.json");
             gitHubIssue.data.updated_at = DateTime.fromJSDate(new Date(workItem.fields["System.ChangedDate"])).minus({ days: 5}).toJSDate();
-            gitHubIssue.data.body = "testing\n\n<pre>public class Foo() {\n    var number = 0;\n    var text = \"Hello World!\";\n    return 0;\n}</pre>";
+            gitHubIssue.data.body = "testing\n<pre>public class Foo() {\n    var number = 0;\n    var text = \"Hello World!\";\n    return 0;\n}</pre>";
 
             const stubbedCore = sinon.stub().callsFake();
             const stubbedWorkItemTrackingApi = {
@@ -2644,7 +2644,7 @@ describe("index", () => {
                 repo: "bar", 
                 issue_number: '12', 
                 title: "Testing title", 
-                body: "testing\nsome more\n<pre>public class Foo() {\n    var number = 0;\n    var text = \"Hello World!\";\n    return 0;\n}</pre>", 
+                body: "testing\n\nsome more\n\n<pre>public class Foo() {\n    var number = 0;\n    var text = \"Hello World!\";\n    return 0;\n}</pre>", 
                 state: "new" 
             });
             sinon.restore();

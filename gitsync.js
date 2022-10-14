@@ -23,7 +23,13 @@ module.exports = class GitSync {
             let config = this.getConfig(context.payload, env);
             log.debug(config);
 
-            let workItem = await this.performWork(config);
+            // Temporary fix until support of PRs
+            if (config.issue.nodeId.startsWith("PR_")) {
+                // Log and skip PRs (comments)
+                log.info(`Action is performed on PR #${config.issue.number}. Skipping...`);
+            } else {
+                await this.performWork(config);
+            }
         } catch (exc) {
             log.error(exc);
         }
@@ -679,7 +685,7 @@ module.exports = class GitSync {
             if (new Date(wiObj.fields["System.ChangedDate"]) > new Date(issue.updated_at)) {
                 log.debug(`[WORKITEM: ${workItem.id} / ISSUE: ${issue_number}] WorkItem.ChangedDate (${new Date(wiObj.fields["System.ChangedDate"])}) is more recent than Issue.UpdatedAt (${new Date(issue.updated_at)}). Updating issue...`);
                 let title = parsed[2];
-                let body = converter.makeMarkdown(wiObj.fields["System.Description"]).replace(/(^(\r\n|\n|\r)$)|(^(\r\n|\n|\r))|^\s*$/gm, "").replace(/<br>/g, "").trim();
+                let body = converter.makeMarkdown(wiObj.fields["System.Description"]).replace(/<br>/g, "").trim();
 
                 let states = config.ado.states;
                 let state = Object.keys(states).find(k => states[k]==wiObj.fields["System.State"]);

@@ -1,0 +1,9 @@
+version = 1
+
+test_patterns = ["gitsync.test.js"]
+
+exclude_patterns = ["**/node_modules/**"]
+
+[[analyzers]]
+name = "javascript"
+enabled = true
