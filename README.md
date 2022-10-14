@@ -14,6 +14,14 @@ GitSync is a workflow action that bidirectionally syncs GitHub and Azure DevOps 
 * Syncs public comments to Azure DevOps discussions, including code, images, etc.
 * Internal teams can maintain private, internal discussions on work items, while allowing public users to contribute to the public discussion.
 
+## Known Limitations
+
+* Any GitHub Issues that have syntax-formatted code blocks (e.g. any code blocks that identify a specific language) will be "de-languaged" when Azure DevOps saves the work item. This is because Azure DevOps doesn't honor native markdown and, though a class name is correctly created initially, Azure DevOps removes the class name of the code block upon saving. Therefore, when the work item is sync'ed back to GitHub, the code block loses syntax highlighting. The process is similar to what's shown below:
+
+  | GitHub Issue | Converted To Html | Azure DevOps Saved<br />Html (No class name) | Converted Back to Markdown,<br /> Issue Updated (No syntax highlighting) |
+  | :----------- | :--------------- | ----------------------- | -------------------------------------- |
+  | <pre>\`\`\`javascript<br /># Some code<br />\`\`\`</pre> | <pre>&lt;code&gt;<br />&nbsp;&nbsp;&nbsp;&lt;pre<nobr /> class="javascript"&gt;<br />&nbsp;&nbsp;&nbsp;# Some code<br />&nbsp;&nbsp;&nbsp;&lt;/pre&gt;<br />&lt;/code&gt;</pre> | <pre>&lt;code&gt;<br />&nbsp;&nbsp;&nbsp;&lt;pre&gt;<br />&nbsp;&nbsp;&nbsp;# Some Code<br />&nbsp;&nbsp;&nbsp;&lt;/pre&gt;<br />&lt;/code&gt;</pre> | <pre>\`\`\`<br /># Some Code<br />\`\`\`</pre> |
+
 ## Configuration
 
 There are two configuration files that will need to be added - the workflow file and the action configuration file, itself. Below are samples of each followed by a description.
