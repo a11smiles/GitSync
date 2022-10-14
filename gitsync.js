@@ -44,9 +44,9 @@ module.exports = class GitSync {
                 let configFile = fs.readFileSync(env.config_file);
                 configJSON = JSON.parse(configFile);    
 
-                console.log("JSON configuration file loaded.");
+                console.log("JSON configuration file loaded.");  // skipcq JS-0002
             } catch {
-                console.log("JSON configuration file not found.");
+                console.log("JSON configuration file not found."); // skipcq JS-0002
             };
         }   
 
@@ -73,7 +73,7 @@ module.exports = class GitSync {
 
         if (config.log_level != undefined)
         {
-            console.log(`Setting logLevel to ${config.log_level.toLowerCase()}...`);
+            console.log(`Setting logLevel to ${config.log_level.toLowerCase()}...`); // skipcq JS-0002
             log.setLevel(config.log_level.toLowerCase(), true);
         } else {
             log.setLevel("info", true);
