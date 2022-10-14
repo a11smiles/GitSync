@@ -1,5 +1,13 @@
 version = 1
 
+test_patterns = ["*.test.js"]
+
+exclude_patterns = ["**/node_modules/**"]
+
+[[analyzers]]
+name = "test-coverage"
+enabled = true
+
 [[analyzers]]
 name = "javascript"
-enabled = true
+enabled = false

@@ -1,0 +1,11 @@
+{
+    "id": 1,
+    "fields": {
+        "System.Title": "GH #12: title 1",
+        "System.Description": "<pre>public class Foo() {\n    var number = 0;\n    var text = &quot;Hello World!&quot;;\n    return 0;\n}</pre>",
+        "System.WorkItemType": "User Story",
+        "System.State": "New",
+        "System.Tags": "GitHub Issue;GitHub Repo: foo/bar;GitHub Label: fiz;GitHub Label: baz;",
+        "System.ChangedDate": "2020-01-01"
+    }
+}
