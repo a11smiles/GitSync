@@ -1,5 +1,5 @@
 const chai = require('chai');
-var sinon = require('sinon');
+let sinon = require('sinon');
 const assert = chai.assert;
 chai.use(require('sinon-chai'));
 const proxyquire = require('proxyquire').noPreserveCache();
@@ -30,8 +30,8 @@ describe("index", () => {
 
     describe("getConfig", () => {
         it("should load the config file", () => {
-            var sync = new GitSync();
-            var config = sync.getConfig(null, {
+            let sync = new GitSync();
+            let config = sync.getConfig(null, {
                 config_file: './mocks/config.json',
                 log_level: 'silent'
             });
@@ -47,8 +47,8 @@ describe("index", () => {
         });
 
         it("should not load the config file", () => {
-            var sync = new GitSync();
-            var config = sync.getConfig(null, {
+            let sync = new GitSync();
+            let config = sync.getConfig(null, {
                 config_file: './mocks/no_config.json',
                 log_level: 'silent'
             });
@@ -64,8 +64,8 @@ describe("index", () => {
         });
 
         it("should set tokens", () => {
-            var sync = new GitSync();
-            var config = sync.getConfig(null, {
+            let sync = new GitSync();
+            let config = sync.getConfig(null, {
                 ado_token: 'adoToken',
                 github_token: 'githubToken',
                 config_file: './mocks/no_config.json',
@@ -84,8 +84,8 @@ describe("index", () => {
         });
 
         it("should set log level to debug", () => {
-            var sync = new GitSync();
-            var config = sync.getConfig(null, {
+            let sync = new GitSync();
+            let config = sync.getConfig(null, {
                 ado_token: 'adoToken',
                 github_token: 'githubToken',
                 config_file: './mocks/no_config.json',
@@ -104,8 +104,8 @@ describe("index", () => {
         });
 
         it("should should merge env ado config", () => {
-            var sync = new GitSync();
-            var config = sync.getConfig(null, {
+            let sync = new GitSync();
+            let config = sync.getConfig(null, {
                 ado_token: 'adoToken',
                 github_token: 'githubToken',
                 config_file: './mocks/config.json',
@@ -158,11 +158,11 @@ describe("index", () => {
 
     describe("cleanUrl", () => {
         it("should sanitize url", () => {
-            var dirtyUrl = "https://api.github.com/repos/foo/bar";
-            var cleanUrl = "https://github.com/foo/bar";
+            let dirtyUrl = "https://api.github.com/repos/foo/bar";
+            let cleanUrl = "https://github.com/foo/bar";
 
-            var sync = new GitSync();
-            var result = sync.cleanUrl(dirtyUrl);
+            let sync = new GitSync();
+            let result = sync.cleanUrl(dirtyUrl);
 
             assert.equal(result, cleanUrl);
         });
@@ -170,11 +170,11 @@ describe("index", () => {
 
     describe("createLabels", () => {
         it("should return a label string", () => {
-            var labelArray = [{ name: "alpha" }, { name: "beta" }, { name: "gamma" }];
-            var labelString = "fuzzy;GitHub Label: alpha;GitHub Label: beta;GitHub Label: gamma;";
+            let labelArray = [{ name: "alpha" }, { name: "beta" }, { name: "gamma" }];
+            let labelString = "fuzzy;GitHub Label: alpha;GitHub Label: beta;GitHub Label: gamma;";
 
-            var sync = new GitSync();
-            var result = sync.createLabels("fuzzy;", labelArray);
+            let sync = new GitSync();
+            let result = sync.createLabels("fuzzy;", labelArray);
 
             assert.equal(result, labelString);
         });
@@ -194,8 +194,8 @@ describe("index", () => {
                 token: 'adoToken'
             }
 
-            var sync = new GitSync();
-            var result = sync.getAssignee(config, false);
+            let sync = new GitSync();
+            let result = sync.getAssignee(config, false);
 
             assert.isNull(result);
         });
@@ -217,8 +217,8 @@ describe("index", () => {
                 mappings: undefined
             }
 
-            var sync = new GitSync();
-            var result = sync.getAssignee(config, false);
+            let sync = new GitSync();
+            let result = sync.getAssignee(config, false);
 
             assert.isNull(result);
         });
@@ -242,8 +242,8 @@ describe("index", () => {
                 }
             }
 
-            var sync = new GitSync();
-            var result = sync.getAssignee(config, false);
+            let sync = new GitSync();
+            let result = sync.getAssignee(config, false);
 
             assert.isNull(result);
         });
@@ -268,8 +268,8 @@ describe("index", () => {
                 }
             }
 
-            var sync = new GitSync();
-            var result = sync.getAssignee(config, true);
+            let sync = new GitSync();
+            let result = sync.getAssignee(config, true);
 
             assert.isNull(result);
         });
@@ -294,8 +294,8 @@ describe("index", () => {
                 }
             }
 
-            var sync = new GitSync();
-            var result = sync.getAssignee(config, false);
+            let sync = new GitSync();
+            let result = sync.getAssignee(config, false);
 
             assert.isNull(result);
         });
@@ -319,8 +319,8 @@ describe("index", () => {
                 }
             }
 
-            var sync = new GitSync();
-            var result = sync.getAssignee(config, true);
+            let sync = new GitSync();
+            let result = sync.getAssignee(config, true);
 
             assert.equal(result, "noone@nowhere.com");
         });
@@ -341,8 +341,8 @@ describe("index", () => {
                 token: 'adoToken'
             }
 
-            var sync = new GitSync();
-            var result = sync.getAssignee(config, true);
+            let sync = new GitSync();
+            let result = sync.getAssignee(config, true);
 
             assert.equal(result, "someone@somewhere.com");
         });
@@ -350,17 +350,17 @@ describe("index", () => {
 
     describe("performWork", () => {
         it("should call all cases", async () => {
-            var sync = new GitSync();
-            var createStub = sinon.stub(sync, "createWorkItem").resolves();
-            var closeStub = sinon.stub(sync, "closeWorkItem").resolves();
-            var deleteStub = sinon.stub(sync, "deleteWorkItem").resolves();
-            var reopenStub = sinon.stub(sync, "reopenWorkItem").resolves();
-            var editStub = sinon.stub(sync, "editWorkItem").resolves();
-            var labelStub = sinon.stub(sync, "labelWorkItem").resolves();
-            var unlabelStub = sinon.stub(sync, "unlabelWorkItem").resolves();
-            var assignStub = sinon.stub(sync, "assignWorkItem").resolves();
-            var unassignStub = sinon.stub(sync, "unassignWorkItem").resolves();
-            var commentStub = sinon.stub(sync, "addComment").resolves();
+            let sync = new GitSync();
+            let createStub = sinon.stub(sync, "createWorkItem").resolves();
+            let closeStub = sinon.stub(sync, "closeWorkItem").resolves();
+            let deleteStub = sinon.stub(sync, "deleteWorkItem").resolves();
+            let reopenStub = sinon.stub(sync, "reopenWorkItem").resolves();
+            let editStub = sinon.stub(sync, "editWorkItem").resolves();
+            let labelStub = sinon.stub(sync, "labelWorkItem").resolves();
+            let unlabelStub = sinon.stub(sync, "unlabelWorkItem").resolves();
+            let assignStub = sinon.stub(sync, "assignWorkItem").resolves();
+            let unassignStub = sinon.stub(sync, "unassignWorkItem").resolves();
+            let commentStub = sinon.stub(sync, "addComment").resolves();
             
 
             await sync.performWork({ action: "opened" });
@@ -388,8 +388,8 @@ describe("index", () => {
         });
 
         it("should call schedule", async () => {
-            var sync = new GitSync();
-            var stub = sinon.stub(sync, "updateIssues").resolves();
+            let sync = new GitSync();
+            let stub = sinon.stub(sync, "updateIssues").resolves();
            
             await sync.performWork({ schedule: "foo" });
 
@@ -402,7 +402,7 @@ describe("index", () => {
         it("should return null when skipping query", async () => {
             let sync = new GitSync();
 
-            var result = await sync.getWorkItem(null, true);
+            let result = await sync.getWorkItem(null, true);
 
             assert.isNull(result);
         });
@@ -436,8 +436,8 @@ describe("index", () => {
                 }
             }
 
-            var sync = new proxiedGitSync();
-            var result = await sync.getWorkItem(config);
+            let sync = new proxiedGitSync();
+            let result = await sync.getWorkItem(config);
 
             assert.equal(result, -1);
             sinon.assert.called(stubbedCore);
@@ -477,8 +477,8 @@ describe("index", () => {
                 }
             }
 
-            var sync = new proxiedGitSync();
-            var result = await sync.getWorkItem(config);
+            let sync = new proxiedGitSync();
+            let result = await sync.getWorkItem(config);
 
             sinon.assert.calledWith(stubbedWorkItemTrackingApi.queryByWiql, 
                 { query: "SELECT [System.Id], [System.Description], [System.Title], [System.AssignedTo], [System.State], [System.Tags] FROM workitems WHERE [System.TeamProject] = @project " +
@@ -528,8 +528,8 @@ describe("index", () => {
                 }
             }
 
-            var sync = new proxiedGitSync();
-            var result = await sync.getWorkItem(config);
+            let sync = new proxiedGitSync();
+            let result = await sync.getWorkItem(config);
 
             sinon.assert.calledWith(stubbedWorkItemTrackingApi.queryByWiql, 
                 { query: "SELECT [System.Id], [System.Description], [System.Title], [System.AssignedTo], [System.State], [System.Tags] FROM workitems WHERE [System.TeamProject] = @project " +
@@ -575,8 +575,8 @@ describe("index", () => {
                 }
             }
 
-            var sync = new proxiedGitSync();
-            var result = await sync.getWorkItem(config);
+            let sync = new proxiedGitSync();
+            let result = await sync.getWorkItem(config);
 
             sinon.assert.calledWith(stubbedWorkItemTrackingApi.queryByWiql, 
                 { query: "SELECT [System.Id], [System.Description], [System.Title], [System.AssignedTo], [System.State], [System.Tags] FROM workitems WHERE [System.TeamProject] = @project " +
@@ -621,8 +621,8 @@ describe("index", () => {
                 }
             }
 
-            var sync = new proxiedGitSync();
-            var result = await sync.getWorkItem(config);
+            let sync = new proxiedGitSync();
+            let result = await sync.getWorkItem(config);
 
             sinon.assert.calledWith(stubbedWorkItemTrackingApi.queryByWiql, 
                 { query: "SELECT [System.Id], [System.Description], [System.Title], [System.AssignedTo], [System.State], [System.Tags] FROM workitems WHERE [System.TeamProject] = @project " +
@@ -671,8 +671,8 @@ describe("index", () => {
                 }
             }
 
-            var sync = new proxiedGitSync();
-            var result = await sync.getWorkItem(config);
+            let sync = new proxiedGitSync();
+            let result = await sync.getWorkItem(config);
 
             sinon.assert.calledWith(stubbedWorkItemTrackingApi.queryByWiql, 
                 { query: "SELECT [System.Id], [System.Description], [System.Title], [System.AssignedTo], [System.State], [System.Tags] FROM workitems WHERE [System.TeamProject] = @project " +
@@ -722,8 +722,8 @@ describe("index", () => {
                 }
             }
 
-            var sync = new proxiedGitSync();
-            var result = await sync.getWorkItem(config);
+            let sync = new proxiedGitSync();
+            let result = await sync.getWorkItem(config);
 
             sinon.assert.calledWith(stubbedWorkItemTrackingApi.queryByWiql, 
                 { query: "SELECT [System.Id], [System.Description], [System.Title], [System.AssignedTo], [System.State], [System.Tags] FROM workitems WHERE [System.TeamProject] = @project " +
@@ -767,10 +767,10 @@ describe("index", () => {
                 }
             };
 
-            var sync = new GitSync();
+            let sync = new GitSync();
             sinon.stub(sync, "getWorkItem").resolves(require("./mocks/workItem.json"));
             
-            var result = await sync.createWorkItem(config);
+            let result = await sync.createWorkItem(config);
 
             assert.equal(result, 0);
             sinon.restore();
@@ -859,10 +859,10 @@ describe("index", () => {
                 }
             ];
 
-            var sync = new proxiedGitSync();
+            let sync = new proxiedGitSync();
             sinon.stub(sync, "getWorkItem").resolves(null);
 
-            var result = await sync.createWorkItem(config);
+            let result = await sync.createWorkItem(config);
 
             assert.equal(result, require("./mocks/workItem.json"));
             sinon.assert.calledWith(stubbedWorkItemTrackingApi.createWorkItem, [], patchDoc, config.ado.project, config.ado.wit, false, config.ado.bypassRules);
@@ -980,10 +980,10 @@ describe("index", () => {
                 }
             ];
 
-            var sync = new proxiedGitSync();
+            let sync = new proxiedGitSync();
             sinon.stub(sync, "getWorkItem").resolves(null);
 
-            var result = await sync.createWorkItem(config);
+            let result = await sync.createWorkItem(config);
 
             assert.equal(result, require("./mocks/workItem.json"));
             sinon.assert.calledWith(stubbedWorkItemTrackingApi.createWorkItem, [], patchDoc, config.ado.project, config.ado.wit, false, config.ado.bypassRules);
@@ -1073,10 +1073,10 @@ describe("index", () => {
                 }
             ];
 
-            var sync = new proxiedGitSync();
+            let sync = new proxiedGitSync();
             sinon.stub(sync, "getWorkItem").resolves(null);
 
-            var result = await sync.createWorkItem(config);
+            let result = await sync.createWorkItem(config);
 
             assert.equal(result, -1);
             sinon.assert.calledWith(stubbedWorkItemTrackingApi.createWorkItem, [], patchDoc, config.ado.project, config.ado.wit, false, config.ado.bypassRules);
@@ -1167,10 +1167,10 @@ describe("index", () => {
                 }
             ];
 
-            var sync = new proxiedGitSync();
+            let sync = new proxiedGitSync();
             sinon.stub(sync, "getWorkItem").resolves(null);
 
-            var result = await sync.createWorkItem(config);
+            let result = await sync.createWorkItem(config);
 
             assert.equal(result, -1);
             sinon.assert.calledWith(stubbedWorkItemTrackingApi.createWorkItem, [], patchDoc, config.ado.project, config.ado.wit, false, config.ado.bypassRules);
@@ -1216,8 +1216,8 @@ describe("index", () => {
                 }
             ];
 
-            var sync = new GitSync();
-            var stub = sinon.stub(sync, "updateWorkItem").resolves();
+            let sync = new GitSync();
+            let stub = sinon.stub(sync, "updateWorkItem").resolves();
             
             await sync.closeWorkItem(config);
 
@@ -1263,8 +1263,8 @@ describe("index", () => {
                 }
             ];
 
-            var sync = new GitSync();
-            var stub = sinon.stub(sync, "updateWorkItem").resolves();
+            let sync = new GitSync();
+            let stub = sinon.stub(sync, "updateWorkItem").resolves();
             
             await sync.deleteWorkItem(config);
 
@@ -1310,8 +1310,8 @@ describe("index", () => {
                 }
             ];
 
-            var sync = new GitSync();
-            var stub = sinon.stub(sync, "updateWorkItem").resolves();
+            let sync = new GitSync();
+            let stub = sinon.stub(sync, "updateWorkItem").resolves();
             
             await sync.reopenWorkItem(config);
 
@@ -1368,8 +1368,8 @@ describe("index", () => {
                 }
             ];
 
-            var sync = new GitSync();
-            var stub = sinon.stub(sync, "updateWorkItem").resolves();
+            let sync = new GitSync();
+            let stub = sinon.stub(sync, "updateWorkItem").resolves();
             
             await sync.editWorkItem(config);
 
@@ -1424,8 +1424,8 @@ describe("index", () => {
                 }
             ];
 
-            var sync = new GitSync();
-            var stub = sinon.stub(sync, "updateWorkItem").resolves();
+            let sync = new GitSync();
+            let stub = sinon.stub(sync, "updateWorkItem").resolves();
             
             await sync.editWorkItem(config);
 
@@ -1474,8 +1474,8 @@ describe("index", () => {
                 }
             ];
 
-            var sync = new GitSync();
-            var stub = sinon.stub(sync, "updateWorkItem").resolves();
+            let sync = new GitSync();
+            let stub = sinon.stub(sync, "updateWorkItem").resolves();
             
             await sync.labelWorkItem(config);
 
@@ -1511,10 +1511,10 @@ describe("index", () => {
                 }
             };
 
-            var sync = new GitSync();
+            let sync = new GitSync();
             sinon.stub(sync, "getWorkItem").resolves(null);
             
-            var result = await sync.unlabelWorkItem(config);
+            let result = await sync.unlabelWorkItem(config);
 
             assert.equal(result, 0);
             sinon.restore();
@@ -1559,9 +1559,9 @@ describe("index", () => {
                 }
             ];
 
-            var sync = new GitSync();
+            let sync = new GitSync();
             sinon.stub(sync, "getWorkItem").resolves(require("./mocks/workItem.json"));
-            var stub = sinon.stub(sync, "updateWorkItem").resolves();
+            let stub = sinon.stub(sync, "updateWorkItem").resolves();
 
             await sync.unlabelWorkItem(config);
 
@@ -1608,8 +1608,8 @@ describe("index", () => {
                 }
             ];
 
-            var sync = new GitSync();
-            var stub = sinon.stub(sync, "updateWorkItem").resolves();
+            let sync = new GitSync();
+            let stub = sinon.stub(sync, "updateWorkItem").resolves();
             sinon.stub(sync, "getAssignee").callsFake(() => "someone@somewhere.com");
             
             await sync.assignWorkItem(config);
@@ -1654,8 +1654,8 @@ describe("index", () => {
                 }
             ];
 
-            var sync = new GitSync();
-            var stub = sinon.stub(sync, "updateWorkItem").resolves();
+            let sync = new GitSync();
+            let stub = sinon.stub(sync, "updateWorkItem").resolves();
             sinon.stub(sync, "getAssignee").callsFake(() => undefined);
             
             await sync.assignWorkItem(config);
@@ -1702,8 +1702,8 @@ describe("index", () => {
                 }
             ];
 
-            var sync = new GitSync();
-            var stub = sinon.stub(sync, "updateWorkItem").resolves();
+            let sync = new GitSync();
+            let stub = sinon.stub(sync, "updateWorkItem").resolves();
             
             await sync.unassignWorkItem(config);
 
@@ -1753,8 +1753,8 @@ describe("index", () => {
                 }
             ];
 
-            var sync = new GitSync();
-            var stub = sinon.stub(sync, "updateWorkItem").resolves();
+            let sync = new GitSync();
+            let stub = sinon.stub(sync, "updateWorkItem").resolves();
             
             await sync.addComment(config);
 
@@ -1803,7 +1803,7 @@ describe("index", () => {
                 }
             ];
 
-            var sync = new GitSync();
+            let sync = new GitSync();
             sinon.stub(sync, "getWorkItem").resolves(null);
             
             let result = await sync.updateWorkItem(config, patchDoc);
@@ -1871,11 +1871,11 @@ describe("index", () => {
                 }
             ];
 
-            var sync = new proxiedGitSync();
+            let sync = new proxiedGitSync();
             sinon.stub(sync, "getWorkItem").resolves(null);
-            var stub = sinon.stub(sync, "createWorkItem").resolves(require("./mocks/workItem.json"));
+            let stub = sinon.stub(sync, "createWorkItem").resolves(require("./mocks/workItem.json"));
 
-            var result = await sync.updateWorkItem(config, patchDoc);
+            let result = await sync.updateWorkItem(config, patchDoc);
 
             assert.equal(result, require("./mocks/workItem.json"));
             sinon.assert.calledWith(stub, config, true);
@@ -1941,10 +1941,10 @@ describe("index", () => {
                 }
             ];
 
-            var sync = new proxiedGitSync();
+            let sync = new proxiedGitSync();
             sinon.stub(sync, "getWorkItem").resolves(require("./mocks/workItem.json"));
 
-            var result = await sync.updateWorkItem(config, patchDoc);
+            let result = await sync.updateWorkItem(config, patchDoc);
 
             assert.equal(result, require("./mocks/workItem.json"));
             sinon.assert.calledWith(stubbedWorkItemTrackingApi.updateWorkItem, [], patchDoc, 1, config.ado.project, false, config.ado.bypassRules);
@@ -2009,10 +2009,10 @@ describe("index", () => {
                 }
             ];
 
-            var sync = new proxiedGitSync();
+            let sync = new proxiedGitSync();
             sinon.stub(sync, "getWorkItem").resolves(require("./mocks/workItem.json"));
 
-            var result = await sync.updateWorkItem(config, patchDoc);
+            let result = await sync.updateWorkItem(config, patchDoc);
 
             assert.equal(result, -1);
             sinon.assert.calledWith(stubbedWorkItemTrackingApi.updateWorkItem, [], patchDoc, 1, config.ado.project, false, config.ado.bypassRules);
@@ -2069,8 +2069,8 @@ describe("index", () => {
                 GITHUB_REPOSITORY: "foo/bar"
             };
 
-            var sync = new proxiedGitSync();
-            var stub = sinon.stub(sync, "updateIssue").resolves(null);
+            let sync = new proxiedGitSync();
+            let stub = sinon.stub(sync, "updateIssue").resolves(null);
 
             await sync.updateIssues(config);
 
@@ -2130,9 +2130,9 @@ describe("index", () => {
                 }
             };
 
-            var sync = new proxiedGitSync();
+            let sync = new proxiedGitSync();
 
-            var result = await sync.updateIssues(config);
+            let result = await sync.updateIssues(config);
 
             assert.equal(result, -1);
             sinon.assert.called(stubbedCore);
@@ -2186,10 +2186,10 @@ describe("index", () => {
                 GITHUB_REPOSITORY: "foo/bar"
             };
 
-            var sync = new proxiedGitSync();
+            let sync = new proxiedGitSync();
             sinon.stub(sync, "updateIssue").resolves(null);
 
-            var result = await sync.updateIssues(config);
+            let result = await sync.updateIssues(config);
 
             assert.equal(result, -1);
             sinon.assert.calledWith(stubbedWorkItemTrackingApi.queryByWiql, 
@@ -2253,10 +2253,10 @@ describe("index", () => {
                 GITHUB_REPOSITORY: "foo/bar"
             };
 
-            var sync = new proxiedGitSync();
+            let sync = new proxiedGitSync();
             sinon.stub(sync, "updateIssue").resolves(null);
 
-            var result = await sync.updateIssues(config);
+            let result = await sync.updateIssues(config);
 
             assert.equal(result, -1);
             sinon.assert.calledWith(stubbedWorkItemTrackingApi.queryByWiql, 
@@ -2331,7 +2331,7 @@ describe("index", () => {
                 GITHUB_REPOSITORY_OWNER: "foo"
             };
 
-            var sync = new proxiedGitSync();
+            let sync = new proxiedGitSync();
             await sync.updateIssue(config, stubbedWorkItemTrackingApi, workItem);
 
             sinon.assert.calledWith(stubbedIssues.update, { 
@@ -2404,7 +2404,7 @@ describe("index", () => {
                 GITHUB_REPOSITORY_OWNER: "foo"
             };
 
-            var sync = new proxiedGitSync();
+            let sync = new proxiedGitSync();
             await sync.updateIssue(config, stubbedWorkItemTrackingApi, workItem);
 
             sinon.assert.calledWith(stubbedIssues.update, { 
@@ -2479,7 +2479,7 @@ describe("index", () => {
                 GITHUB_REPOSITORY_OWNER: "foo"
             };
 
-            var sync = new proxiedGitSync();
+            let sync = new proxiedGitSync();
             await sync.updateIssue(config, stubbedWorkItemTrackingApi, workItem);
 
             sinon.assert.calledWith(stubbedIssues.update, { 
@@ -2554,8 +2554,8 @@ describe("index", () => {
                 GITHUB_REPOSITORY_OWNER: "foo"
             };
 
-            var sync = new proxiedGitSync();
-            var result = await sync.updateIssue(config, stubbedWorkItemTrackingApi, workItem);
+            let sync = new proxiedGitSync();
+            let result = await sync.updateIssue(config, stubbedWorkItemTrackingApi, workItem);
 
             assert.isNull(result);
             sinon.assert.notCalled(stubbedIssues.update);
@@ -2623,7 +2623,7 @@ describe("index", () => {
                 GITHUB_REPOSITORY_OWNER: "foo"
             };
 
-            var sync = new proxiedGitSync();
+            let sync = new proxiedGitSync();
             await sync.updateIssue(config, stubbedWorkItemTrackingApi, workItem);
 
             sinon.assert.calledWith(stubbedIssues.update, { 
@@ -2698,8 +2698,8 @@ describe("index", () => {
                 GITHUB_REPOSITORY_OWNER: "foo"
             };
 
-            var sync = new proxiedGitSync();
-            var result = await sync.updateIssue(config, stubbedWorkItemTrackingApi, workItem);
+            let sync = new proxiedGitSync();
+            let result = await sync.updateIssue(config, stubbedWorkItemTrackingApi, workItem);
 
             assert.isNull(result);
             sinon.assert.notCalled(stubbedIssues.update);
@@ -2764,8 +2764,8 @@ describe("index", () => {
                 GITHUB_REPOSITORY_OWNER: "foo"
             };
 
-            var sync = new proxiedGitSync();
-            var result = await sync.updateIssue(config, stubbedWorkItemTrackingApi, workItem);
+            let sync = new proxiedGitSync();
+            let result = await sync.updateIssue(config, stubbedWorkItemTrackingApi, workItem);
 
             assert.isNull(result);
             sinon.restore();
