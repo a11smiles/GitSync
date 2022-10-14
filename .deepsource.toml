@@ -1,6 +1,6 @@
-version = 2
+version = 1
 
-test_patterns = ["gitsync.test.js"]
+test_patterns = ["*.test.js"]
 
 exclude_patterns = ["**/node_modules/**"]
 
