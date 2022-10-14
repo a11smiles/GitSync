@@ -14,7 +14,8 @@ module.exports = class GitSync {
     constructor(level = "silent") {
         log.setLevel(level, true);
     }
-
+    
+    // skipcq: TCV-001
     async run() {
         try {
             const context = github.context;
