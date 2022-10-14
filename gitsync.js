@@ -44,9 +44,9 @@ module.exports = class GitSync {
                 let configFile = fs.readFileSync(env.config_file);
                 configJSON = JSON.parse(configFile);    
 
-                console.log("JSON configuration file loaded.");
+                console.log("JSON configuration file loaded.");  // skipcq JS-0002
             } catch {
-                console.log("JSON configuration file not found.");
+                console.log("JSON configuration file not found."); // skipcq JS-0002
             };
         }   
 
@@ -73,7 +73,7 @@ module.exports = class GitSync {
 
         if (config.log_level != undefined)
         {
-            console.log(`Setting logLevel to ${config.log_level.toLowerCase()}...`);
+            console.log(`Setting logLevel to ${config.log_level.toLowerCase()}...`); // skipcq JS-0002
             log.setLevel(config.log_level.toLowerCase(), true);
         } else {
             log.setLevel("info", true);
@@ -213,7 +213,7 @@ module.exports = class GitSync {
             result = await client.queryByWiql(wiql, context);
             log.debug("Query results:", result);
 
-            if (result == null) {
+            if (result === null) {
                 log.error("Error: project name appears to be invalid.");
                 core.setFailed("Error: project name appears to be invalid.");
                 return -1;
@@ -234,7 +234,7 @@ module.exports = class GitSync {
 
         log.debug("Work item:", workItem);
 
-        if (workItem != null) {
+        if (workItem !== null) {
             log.info("Work item found:", workItem.id);
             try {
                 return await client.getWorkItem(workItem.id, null, null, 4);
@@ -259,8 +259,8 @@ module.exports = class GitSync {
                 return 0;
             }
 
-            var converter = new showdown.Converter();
-            var html = converter.makeHtml(config.issue.body);
+            let converter = new showdown.Converter();
+            const html = converter.makeHtml(config.issue.body);
             
             converter = null;
 
@@ -346,7 +346,7 @@ module.exports = class GitSync {
             try {
                 result = await client.createWorkItem([], patchDoc, config.ado.project, config.ado.wit, false, config.ado.bypassRules);
 
-                if (result == null) {
+                if (result === null) {
                     log.error("Error: failure creating work item.");
                     log.error(`WIT may not be correct: ${config.ado.wit}`);
                     core.setFailed();
@@ -429,8 +429,8 @@ module.exports = class GitSync {
     async editWorkItem(config) {
         log.info("Editing work item...");
 
-        var converter = new showdown.Converter();
-        var html = converter.makeHtml(config.issue.body);
+        let converter = new showdown.Converter();
+        const html = converter.makeHtml(config.issue.body);
         
         converter = null;
 
@@ -553,8 +553,8 @@ module.exports = class GitSync {
     async addComment(config) {
         log.info("Adding comment to work item...");
 
-        var converter = new showdown.Converter();
-        var html = converter.makeHtml(config.comment.body);
+        let converter = new showdown.Converter();
+        const html = converter.makeHtml(config.comment.body);
         
         converter = null;
 
@@ -664,13 +664,13 @@ module.exports = class GitSync {
         log.debug(`[WORKITEM: ${workItem.id}] Repo:`, repo);
 
         return client.getWorkItem(workItem.id, ["System.Title", "System.Description", "System.State", "System.ChangedDate"]).then(async (wiObj) => {
-            let parsed = wiObj.fields["System.Title"].match(/^GH\s#(\d+):\s(.*)/);
+            let parsed = wiObj.fields["System.Title"].match(/^GH\s#(?<number>\d+):\s(?<title>.*)/);
 
-            let issue_number = parsed[1];
+            let issue_number = parsed.groups.number;
             log.debug(`[WORKITEM: ${workItem.id} / ISSUE: ${issue_number}] Issue Number:`, issue_number);
 
             // Get issue
-            var issue = (await octokit.rest.issues.get({
+            const issue = (await octokit.rest.issues.get({
                 owner,
                 repo,
                 issue_number
@@ -685,7 +685,7 @@ module.exports = class GitSync {
             // Can later add check to see if last entry in history of WorkItem was indeed updated by GitHub
             if (new Date(wiObj.fields["System.ChangedDate"]) > new Date(issue.updated_at)) {
                 log.debug(`[WORKITEM: ${workItem.id} / ISSUE: ${issue_number}] WorkItem.ChangedDate (${new Date(wiObj.fields["System.ChangedDate"])}) is more recent than Issue.UpdatedAt (${new Date(issue.updated_at)}). Updating issue...`);
-                let title = parsed[2];
+                let title = parsed.groups.title;
                 let body = converter.makeMarkdown(wiObj.fields["System.Description"]).replace(/<br>/g, "").trim();
 
                 let states = config.ado.states;
