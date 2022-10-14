@@ -12,6 +12,7 @@ describe("index", () => {
     const originalLogFunction = console.log;
     let output = null;
 
+    // skipcq JS-0241
     beforeEach(function(done) {
       output = '';
       console.log = (msg) => {
@@ -23,7 +24,7 @@ describe("index", () => {
 
     afterEach(function() {
         console.log = originalLogFunction; // undo dummy log function
-        if (this.currentTest.state === 'failed') {
+        if (this.currentTest.state === 'failed') {  // skipcq JS-0069
             console.log(output);
         }
     });
