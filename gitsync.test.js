@@ -2567,7 +2567,7 @@ describe("index", () => {
         
         it("should successfully convert html code blocks back to markdown and update github issue when not equal", async () => {
             let workItem = require("./mocks/workItemCode.json");
-            workItem.fields["System.Description"] = "testing<br \>some more<br \>" + workItem.fields["System.Description"];
+            workItem.fields["System.Description"] = "testing<br />some more<br />" + workItem.fields["System.Description"];
             workItem.fields["System.Title"] = "GH #12: Testing title";
             let gitHubIssue = require("./mocks/githubIssue.json");
             gitHubIssue.data.updated_at = DateTime.fromJSDate(new Date(workItem.fields["System.ChangedDate"])).minus({ days: 5}).toJSDate();
