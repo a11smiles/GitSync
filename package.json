@@ -4,7 +4,7 @@
   "description": "A workflow action that syncs GitHub and Azure DevOps activities.",
   "main": "index.js",
   "scripts": {
-    "test": "nyc --reporter=text --reporter=html mocha -r esm gitsync.test.js"
+    "test": "nyc --reporter=text --reporter=html --reporter=cobertura mocha -r esm gitsync.test.js"
   },
   "repository": {
     "type": "git",

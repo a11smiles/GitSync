@@ -1,0 +1,22 @@
+name: Run Unit Tests
+
+on:
+  pull_request:
+    types: [opened, reopened]
+  push
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Run tests
+    steps:       
+    - uses: actions/checkout@v3
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
+    - name: Report results to DeepSource
+      run: |
+        npm test
+        curl https://deepsource.io/cli | sh
+        ./bin/deepsource report --analyzer test-coverage --key javascript --value-file ./coverage/cobertura-coverage.xml
+      env:     
+        DEEPSOURCE_DSN: ${{ secrets.DEEPSOURCE_DSN }}

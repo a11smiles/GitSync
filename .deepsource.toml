@@ -10,4 +10,4 @@ enabled = true
 
 [[analyzers]]
 name = "javascript"
-enabled = true
+enabled = false
