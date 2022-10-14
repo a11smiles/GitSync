@@ -1806,7 +1806,7 @@ describe("index", () => {
             var sync = new GitSync();
             sinon.stub(sync, "getWorkItem").resolves(null);
             
-            var result = await sync.updateWorkItem(config, patchDoc);
+            let result = await sync.updateWorkItem(config, patchDoc);
 
             assert.equal(result, 0);
             sinon.restore();
