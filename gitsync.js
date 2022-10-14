@@ -260,7 +260,7 @@ module.exports = class GitSync {
             }
 
             let converter = new showdown.Converter();
-            let html = converter.makeHtml(config.issue.body);
+            const html = converter.makeHtml(config.issue.body);
             
             converter = null;
 
@@ -430,7 +430,7 @@ module.exports = class GitSync {
         log.info("Editing work item...");
 
         let converter = new showdown.Converter();
-        let html = converter.makeHtml(config.issue.body);
+        const html = converter.makeHtml(config.issue.body);
         
         converter = null;
 
@@ -554,7 +554,7 @@ module.exports = class GitSync {
         log.info("Adding comment to work item...");
 
         let converter = new showdown.Converter();
-        let html = converter.makeHtml(config.comment.body);
+        const html = converter.makeHtml(config.comment.body);
         
         converter = null;
 
@@ -670,7 +670,7 @@ module.exports = class GitSync {
             log.debug(`[WORKITEM: ${workItem.id} / ISSUE: ${issue_number}] Issue Number:`, issue_number);
 
             // Get issue
-            let issue = (await octokit.rest.issues.get({
+            const issue = (await octokit.rest.issues.get({
                 owner,
                 repo,
                 issue_number
