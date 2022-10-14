@@ -213,7 +213,7 @@ module.exports = class GitSync {
             result = await client.queryByWiql(wiql, context);
             log.debug("Query results:", result);
 
-            if (result == null) {
+            if (result === null) {
                 log.error("Error: project name appears to be invalid.");
                 core.setFailed("Error: project name appears to be invalid.");
                 return -1;
@@ -234,7 +234,7 @@ module.exports = class GitSync {
 
         log.debug("Work item:", workItem);
 
-        if (workItem != null) {
+        if (workItem !== null) {
             log.info("Work item found:", workItem.id);
             try {
                 return await client.getWorkItem(workItem.id, null, null, 4);
@@ -259,8 +259,8 @@ module.exports = class GitSync {
                 return 0;
             }
 
-            var converter = new showdown.Converter();
-            var html = converter.makeHtml(config.issue.body);
+            let converter = new showdown.Converter();
+            let html = converter.makeHtml(config.issue.body);
             
             converter = null;
 
@@ -346,7 +346,7 @@ module.exports = class GitSync {
             try {
                 result = await client.createWorkItem([], patchDoc, config.ado.project, config.ado.wit, false, config.ado.bypassRules);
 
-                if (result == null) {
+                if (result === null) {
                     log.error("Error: failure creating work item.");
                     log.error(`WIT may not be correct: ${config.ado.wit}`);
                     core.setFailed();
@@ -429,8 +429,8 @@ module.exports = class GitSync {
     async editWorkItem(config) {
         log.info("Editing work item...");
 
-        var converter = new showdown.Converter();
-        var html = converter.makeHtml(config.issue.body);
+        let converter = new showdown.Converter();
+        let html = converter.makeHtml(config.issue.body);
         
         converter = null;
 
@@ -553,8 +553,8 @@ module.exports = class GitSync {
     async addComment(config) {
         log.info("Adding comment to work item...");
 
-        var converter = new showdown.Converter();
-        var html = converter.makeHtml(config.comment.body);
+        let converter = new showdown.Converter();
+        let html = converter.makeHtml(config.comment.body);
         
         converter = null;
 
@@ -670,7 +670,7 @@ module.exports = class GitSync {
             log.debug(`[WORKITEM: ${workItem.id} / ISSUE: ${issue_number}] Issue Number:`, issue_number);
 
             // Get issue
-            var issue = (await octokit.rest.issues.get({
+            let issue = (await octokit.rest.issues.get({
                 owner,
                 repo,
                 issue_number

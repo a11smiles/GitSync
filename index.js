@@ -1,4 +1,4 @@
 const GitSync = require('./gitsync');
 
-var sync = new GitSync("debug");
+let sync = new GitSync("debug");
 sync.run();
