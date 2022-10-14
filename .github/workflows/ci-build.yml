@@ -3,7 +3,9 @@ name: Run Unit Tests
 on:
   pull_request:
     types: [opened, reopened]
-  push
+  push:
+    branches:
+      - 'main'
 
 jobs:
   test:
