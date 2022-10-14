@@ -664,9 +664,9 @@ module.exports = class GitSync {
         log.debug(`[WORKITEM: ${workItem.id}] Repo:`, repo);
 
         return client.getWorkItem(workItem.id, ["System.Title", "System.Description", "System.State", "System.ChangedDate"]).then(async (wiObj) => {
-            let parsed = wiObj.fields["System.Title"].match(/^GH\s#(\d+):\s(.*)/);
+            let parsed = wiObj.fields["System.Title"].match(/^GH\s#(?<number>\d+):\s(?<title>.*)/);
 
-            let issue_number = parsed[1];
+            let issue_number = parsed.groups.number;
             log.debug(`[WORKITEM: ${workItem.id} / ISSUE: ${issue_number}] Issue Number:`, issue_number);
 
             // Get issue
@@ -685,7 +685,7 @@ module.exports = class GitSync {
             // Can later add check to see if last entry in history of WorkItem was indeed updated by GitHub
             if (new Date(wiObj.fields["System.ChangedDate"]) > new Date(issue.updated_at)) {
                 log.debug(`[WORKITEM: ${workItem.id} / ISSUE: ${issue_number}] WorkItem.ChangedDate (${new Date(wiObj.fields["System.ChangedDate"])}) is more recent than Issue.UpdatedAt (${new Date(issue.updated_at)}). Updating issue...`);
-                let title = parsed[2];
+                let title = parsed.groups.title;
                 let body = converter.makeMarkdown(wiObj.fields["System.Description"]).replace(/<br>/g, "").trim();
 
                 let states = config.ado.states;
