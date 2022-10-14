@@ -652,12 +652,12 @@ module.exports = class GitSync {
         workItems.forEach(async (workItem) => { await this.updateIssue(config, client, workItem); });
     }
 
-    async updateIssue(config, client, workItem) {
+    updateIssue(config, client, workItem) {
         log.info(`Updating issue for work item (${workItem.id})...`);
         const octokit = new github.getOctokit(config.github.token);
         const owner = config.GITHUB_REPOSITORY_OWNER;
         const repo = config.GITHUB_REPOSITORY.replace(owner + "/", "");
-        let converter = new showdown.Converter();
+        const converter = new showdown.Converter();
 
         log.debug(`[WORKITEM: ${workItem.id}] Owner:`, owner);
         log.debug(`[WORKITEM: ${workItem.id}] Repo:`, repo);
