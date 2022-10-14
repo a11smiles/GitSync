@@ -1,3 +1,5 @@
+// skipcq JS-0119, JS-0246
+
 const chai = require('chai');
 var sinon = require('sinon');
 const assert = chai.assert;
@@ -10,7 +12,7 @@ const GitSync = require('./gitsync');
 
 describe("index", () => {
     const originalLogFunction = console.log;
-    let output;
+    let output = null;
 
     beforeEach(function(done) {
       output = '';
