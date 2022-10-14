@@ -657,7 +657,7 @@ module.exports = class GitSync {
         const octokit = new github.getOctokit(config.github.token);
         const owner = config.GITHUB_REPOSITORY_OWNER;
         const repo = config.GITHUB_REPOSITORY.replace(owner + "/", "");
-        var converter = new showdown.Converter();
+        let converter = new showdown.Converter();
 
         log.debug(`[WORKITEM: ${workItem.id}] Owner:`, owner);
         log.debug(`[WORKITEM: ${workItem.id}] Repo:`, repo);
