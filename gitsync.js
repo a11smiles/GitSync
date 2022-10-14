@@ -636,7 +636,7 @@ module.exports = class GitSync {
             result = await client.queryByWiql(wiql, context);
             log.debug("Query results:", result);
 
-            if (result == null) {
+            if (result === null) {
                 log.error("Error: project name appears to be invalid.");
                 core.setFailed("Error: project name appears to be invalid.");
                 return -1;
@@ -688,15 +688,15 @@ module.exports = class GitSync {
                 let body = converter.makeMarkdown(wiObj.fields["System.Description"]).replace(/<br>/g, "").trim();
 
                 let states = config.ado.states;
-                let state = Object.keys(states).find(k => states[k]==wiObj.fields["System.State"]);
+                let state = Object.keys(states).find(k => states[k]===wiObj.fields["System.State"]);
                 
                 log.debug(`[WORKITEM: ${workItem.id} / ISSUE: ${issue_number}] Title:`, title);
                 log.debug(`[WORKITEM: ${workItem.id} / ISSUE: ${issue_number}] Body:`, body);
                 log.debug(`[WORKITEM: ${workItem.id} / ISSUE: ${issue_number}] State:`, state);
 
-                if (title != issue.title ||
-                    body != issue.body ||
-                    state != issue.state) {
+                if (title !== issue.title ||
+                    body !== issue.body ||
+                    state !== issue.state) {
 
                     let result = await octokit.rest.issues.update({
                         owner,
