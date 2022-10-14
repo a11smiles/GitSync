@@ -22,3 +22,4 @@ jobs:
         ./bin/deepsource report --analyzer test-coverage --key javascript --value-file ./coverage/cobertura-coverage.xml
       env:     
         DEEPSOURCE_DSN: ${{ secrets.DEEPSOURCE_DSN }}
+        
