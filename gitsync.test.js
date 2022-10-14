@@ -1511,19 +1511,6 @@ describe("index", () => {
                 }
             };
 
-            let patchDoc = [
-                {
-                    op: "add",
-                    path: "/fields/System.Tags",
-                    value: "GitHub Label: ding;"
-                },
-                {
-                op: "add",
-                path: "/fields/System.History",
-                value: 'GitHub issue #100: <a href="http://google.com" target="_new">foo</a> in <a href="http://google.com" target="_blank">foo/bar</a> addition of label \'ding\' by <a href="http://google.com" target="_blank">someone</a>'
-                }
-            ];
-
             var sync = new GitSync();
             sinon.stub(sync, "getWorkItem").resolves(null);
             
@@ -1819,7 +1806,7 @@ describe("index", () => {
             var sync = new GitSync();
             sinon.stub(sync, "getWorkItem").resolves(null);
             
-            var result = await sync.updateWorkItem(config);
+            var result = await sync.updateWorkItem(config, patchDoc);
 
             assert.equal(result, 0);
             sinon.restore();
@@ -2085,7 +2072,7 @@ describe("index", () => {
             var sync = new proxiedGitSync();
             var stub = sinon.stub(sync, "updateIssue").resolves(null);
 
-            var result = await sync.updateIssues(config);
+            await sync.updateIssues(config);
 
             sinon.assert.calledWith(stubbedWorkItemTrackingApi.queryByWiql, 
                 { query:
